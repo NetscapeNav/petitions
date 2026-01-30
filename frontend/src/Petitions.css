@@ -1,15 +1,52 @@
 .PetitionsDiv {
+    position: relative;
+    width: 800px;
+    margin: 1.5em auto 0;
+}
 
+.old-1 {
+    position: absolute;
+    background-color: #AFAFAF;
+    width: 100%;
+    transform: translateY(-60px) scale(0.92);
+    min-height: 20em;
+    box-shadow: 0px -4px 4px rgba(0, 0, 0, 0.25);
+    z-index: 0;
+    animation: slideIn 0.4s ease-out;
+}
+
+.old-2 {
+    position: absolute;
+    min-height: 20em;
+    background-color: #BFBFBF;
+    width: 100%;
+    transform: translateY(-30px) scale(0.96);
+    box-shadow: 0px -4px 4px rgba(0, 0, 0, 0.25);
+    z-index: 1;
+    animation: slideIn 0.4s ease-out;
 }
 
 .Petition {
+    position: relative;
     background-color: #D9D9D9;
     padding: 30px;
-    margin-bottom: 60px;
     box-shadow: 0px -4px 4px rgba(0, 0, 0, 0.25);
     min-height: 20em;
     display: flex;
     flex-direction: column;
+    z-index: 2;
+    animation: slideIn 0.4s ease-out;
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-30px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
 }
 
 .PetitionsHeader {
@@ -21,10 +58,17 @@
 .PetitionsText {
 }
 
+.ButtonsAndNumber {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 0;
+    margin-top: auto;
+}
+
 .Buttons {
     display: flex;
     justify-content: space-between;
-    gap: 10px;
     margin-top: auto;
 }
 

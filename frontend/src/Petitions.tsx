@@ -13,6 +13,7 @@ interface Petition {
 
 function Main() {
     const [petitions, setPetitions] = useState<Petition[]>([]);
+    const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
         fetch("http://localhost:8000/api/petitions")
@@ -28,12 +29,28 @@ function Main() {
             .catch(err => console.error(err));
     }, []);
 
+    const handleRefuse = () => {
+        if (currentIndex + 1 < petitions.length) {
+            setCurrentIndex(currentIndex + 1);
+        } else {
+            setCurrentIndex(0);
+        }
+    }
+
+    if (petitions.length === 0) {
+        return <div className="PetitionsDiv">Загрузка петиций...</div>;
+    }
+
+    const petition = petitions[currentIndex];
+
     return (
         <div className="PetitionsDiv">
-            {petitions.map((petition) => (
-                <div className="Petition" key={petition.id}>
-                    <h3 className="PetitionsHeader">{petition.header}</h3>
-                    <p className="PetitionsText">{petition.text}</p>
+            <div className="old-2"></div>
+            <div className="old-1"></div>
+            <div className="Petition" key={petition.id}>
+                <h3 className="PetitionsHeader">{petition.header}</h3>
+                <p className="PetitionsText">{petition.text}</p>
+                <div className="ButtonsAndNumber">
                     <p>{petition.signatures_count} человек уже подписались</p>
                     <div className="Buttons">
                         <button className="PetitionsSign" onClick={() => {
@@ -41,12 +58,12 @@ function Main() {
                         }}>
                             Подписать
                         </button>
-                        <button className="PetitionsRefuse">
+                        <button className="PetitionsRefuse" onClick={handleRefuse}>
                             Не интересует
                         </button>
                     </div>
                 </div>
-            ))}
+            </div>
         </div>
     );
 }
