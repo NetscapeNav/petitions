@@ -31,7 +31,7 @@ def read_petitions(user_id: int):
     if connection is None:
         return {"error": "Database connection failed"}
     cursor = connection.cursor(dictionary=True)
-    cursor.execute("""
+    query = """
         SELECT 
             id, 
             title as header, 
@@ -39,12 +39,13 @@ def read_petitions(user_id: int):
             pdf_url,
             EXISTS(
                 SELECT 1 FROM signatures 
-                WHERE signatures.petition_id = petitions.id AND signatures.user_id = """ + str(user_id) + """
+                WHERE signatures.petition_id = petitions.id AND signatures.user_id = %s
             ) as is_signed,
             (SELECT COUNT(*) FROM signatures WHERE signatures.petition_id = petitions.id) as signatures_count
         FROM petitions 
         WHERE status ='ongoing'
-    """)
+    """
+    cursor.execute(query, (user_id, ))
     data = cursor.fetchall()
     cursor.close()
     connection.close()
@@ -72,7 +73,7 @@ def handle_submit_petition(
 ):
     connection = get_db_connection()
     if connection is None:
-        return 0
+        return {"error": "Database connection failed"}
     cursor = connection.cursor(dictionary=True)
     query = """
         INSERT INTO `petitions`
@@ -126,7 +127,7 @@ def get_position_id(petition_id : int, user_id: int):
 def sign_petition(petition_id: int, user_id: int):
     connection = get_db_connection()
     if connection is None:
-        return 0
+        return {"error": "Database connection failed"}
     cursor = connection.cursor()
     query = """
         INSERT INTO
@@ -144,6 +145,47 @@ def sign_petition(petition_id: int, user_id: int):
         print(f"SQL Error: {e}")
         if e.errno == 1062:
             return {"status": "error1062", "message": "Вы уже подписали эту петицию"}
+        return {"status": "error", "message": str(e)}
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post('/api/login')
+def login(tg_id: int, full_name: str = "Anonymous"):
+    connection = get_db_connection()
+    if connection is None:
+        return {"status": "error", "message": "Database connection failed"}
+    cursor = connection.cursor(dictionary=True)
+    try:
+        chk_query = """
+            SELECT * FROM
+            `users`
+            WHERE
+            tg_id = %s
+        """
+        values = (tg_id, )
+        cursor.execute(chk_query, values)
+        user = cursor.fetchone()
+
+        if user:
+            return {"status": "success", "user_id": user['id'], "is_new": False}
+
+        ins_query = """
+            INSERT INTO 
+            `users`
+            (`tg_id`, `is_verified`, `verification_code`, `exist_from`, `email`, `full_name`, `region`)
+            VALUES
+            (%s, %s, %s, NOW(), %s, %s, %s)
+        """
+        values = (tg_id, 0, "", "", full_name, "")
+
+        cursor.execute(ins_query, values)
+        connection.commit()
+        new_user_id = cursor.lastrowid
+
+        return {"status": "success", "user_id": new_user_id, "is_new": True}
+    except Error as e:
+        print(f"SQL Error: {e}")
         return {"status": "error", "message": str(e)}
     finally:
         cursor.close()
