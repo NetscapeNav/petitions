@@ -6,6 +6,7 @@ interface Petition {
     header: string;
     text: string;
     signatures_count: number;
+    is_signed: number;
 }
 
 function PetitionPage() {
@@ -13,7 +14,7 @@ function PetitionPage() {
     const [petition, setPetition] = useState<Petition|null>(null);
 
     useEffect(() => {
-        fetch(`http://localhost:8000/api/petitions/${id}`)
+        fetch(`http://localhost:8000/api/petitions/${id}?user_id=1`)
             .then(response => response.json())
             .then(data => {
                 if (!data.error) {
@@ -26,22 +27,28 @@ function PetitionPage() {
 
     function handleSign(event: React.MouseEvent<HTMLButtonElement>) {
         event.preventDefault();
-        fetch(`http://localhost:8000/api/sign?petition_id=${id}`, {
+
+        fetch(`http://localhost:8000/api/sign?petition_id=${id}&user_id=1`, {
             method: "POST",
         })
-            .then(response => response.json())
-            .then(data => {
-                console.log(data);
-                if (data.status === "success") {
-                    alert("Спасибо за подписку!");
-                } else {
-                    if (data.status === "error1062") {
-                        alert("Вы уже подписаны на эту петицию!");
-                    }
-                    console.error("Бэкенд вернул ошибку:", data.error);
+        .then(response => response.json())
+        .then(data => {
+            console.log(data);
+            if (data.status === "success") {
+                alert("Спасибо за подписку!");
+                setPetition(prev => prev ? {
+                    ...prev,
+                    signatures_count: prev.signatures_count + 1,
+                    is_signed: 1,
+                } : null);
+            } else {
+                if (data.status === "error1062") {
+                    alert("Вы уже подписаны на эту петицию!");
                 }
-            })
-            .catch(error => console.log(error));
+                console.error("Бэкенд вернул ошибку:", data.error);
+            }
+        })
+        .catch(error => console.log(error));
     }
 
     if (!petition) {
@@ -59,8 +66,8 @@ function PetitionPage() {
                 <h1 className="PetitionInfoTitle">{petition.header}</h1>
                 <div className="ActionDiv">
                     <p className="signaturesCount">{petition.signatures_count} человек уже подписали</p>
-                    <button onClick={handleSign} className="ButtonsSign">
-                        Подписать
+                    <button onClick={handleSign} disabled={petition.is_signed === 1} className={!petition.is_signed ? "ButtonsSign" : "PetitionWatch"}>
+                        {!petition.is_signed ? "Подписать" : "Подписано"}
                     </button>
                 </div>
             </div>

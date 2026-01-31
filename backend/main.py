@@ -26,7 +26,7 @@ def get_db_connection():
     return connection
 
 @app.get('/api/petitions')
-def read_petitions():
+def read_petitions(user_id: int):
     connection = get_db_connection()
     if connection is None:
         return {"error": "Database connection failed"}
@@ -37,6 +37,10 @@ def read_petitions():
             title as header, 
             content as text, 
             pdf_url,
+            EXISTS(
+                SELECT 1 FROM signatures 
+                WHERE signatures.petition_id = petitions.id AND signatures.user_id = """ + str(user_id) + """
+            ) as is_signed,
             (SELECT COUNT(*) FROM signatures WHERE signatures.petition_id = petitions.id) as signatures_count
         FROM petitions 
         WHERE status ='ongoing'
@@ -89,13 +93,17 @@ def handle_submit_petition(
         connection.close()
 
 @app.get('/api/petitions/{petition_id}')
-def get_position_id(petition_id : int):
+def get_position_id(petition_id : int, user_id: int):
     connection = get_db_connection()
     if connection is None:
         return {"error": "No DB connection"}
     cursor = connection.cursor(dictionary=True)
     query = """
     SELECT title as header, content as text,
+    EXISTS(
+        SELECT 1 FROM signatures 
+        WHERE signatures.petition_id = petitions.id AND signatures.user_id = """ + str(user_id) + """
+    ) as is_signed,
     (SELECT COUNT(*) FROM signatures WHERE petitions.id = signatures.petition_id) as signatures_count
     FROM petitions
     WHERE petitions.id = %s"""
@@ -115,7 +123,7 @@ def get_position_id(petition_id : int):
         connection.close()
 
 @app.post('/api/sign')
-def sign_petition(petition_id: int):
+def sign_petition(petition_id: int, user_id: int):
     connection = get_db_connection()
     if connection is None:
         return 0
@@ -127,7 +135,7 @@ def sign_petition(petition_id: int):
         VALUES 
         (%s, %s, %s, %s)
     """
-    values = (11, petition_id, "", "digital")
+    values = (user_id, petition_id, "", "digital")
     try:
         cursor.execute(query, values)
         connection.commit()

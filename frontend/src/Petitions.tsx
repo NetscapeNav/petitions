@@ -10,6 +10,7 @@ interface Petition {
     text: string;
     pdf_url: string;
     signatures_count: number;
+    is_signed: number;
 }
 
 function Main() {
@@ -17,9 +18,10 @@ function Main() {
     const [currentIndex, setCurrentIndex] = useState(0);
 
     useEffect(() => {
-        fetch("http://localhost:8000/api/petitions")
+        fetch("http://localhost:8000/api/petitions?user_id=1")
             .then(response => response.json())
             .then(data => {
+                console.log(data);
                 if (Array.isArray(data)) {
                     setPetitions(data);
                 } else {
@@ -53,10 +55,13 @@ function Main() {
                     <h3 className="PetitionsHeader">{petition.header}</h3>
                     <p className="PetitionsText">{petition.text}</p>
                     <div className="ButtonsAndNumber">
-                        <p>{petition.signatures_count} человек уже подписались</p>
+                        <p>{petition.signatures_count} человек
+                            {petition.is_signed === 1 ? " (вы тоже!) " : " "}
+                            уже подписались</p>
                         <div className="Buttons">
-                            <Link to={"/petition/" + petition.id} className="PetitionsSign">
-                                Подписать
+                            <Link to={"/petition/" + petition.id}
+                                  className={!petition.is_signed ? "PetitionsSign" : "PetitionWatch"}>
+                                {!petition.is_signed ? "Подписать" : "Посмотреть"}
                             </Link>
                             <button className="PetitionsRefuse" onClick={handleRefuse}>
                                 Не интересует
@@ -66,7 +71,8 @@ function Main() {
                 </div>
             </div>
         </>
-    );
+)
+    ;
 }
 
 export default Main;
