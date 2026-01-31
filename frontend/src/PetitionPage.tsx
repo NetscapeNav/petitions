@@ -24,6 +24,26 @@ function PetitionPage() {
             .catch(error => console.log(error));
     }, [id]);
 
+    function handleSign(event: React.MouseEvent<HTMLButtonElement>) {
+        event.preventDefault();
+        fetch(`http://localhost:8000/api/sign?petition_id=${id}`, {
+            method: "POST",
+        })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data);
+                if (data.status === "success") {
+                    alert("Спасибо за подписку!");
+                } else {
+                    if (data.status === "error1062") {
+                        alert("Вы уже подписаны на эту петицию!");
+                    }
+                    console.error("Бэкенд вернул ошибку:", data.error);
+                }
+            })
+            .catch(error => console.log(error));
+    }
+
     if (!petition) {
         return (
             <div>Загрузка петиции...</div>
@@ -39,9 +59,9 @@ function PetitionPage() {
                 <h1 className="PetitionInfoTitle">{petition.header}</h1>
                 <div className="ActionDiv">
                     <p className="signaturesCount">{petition.signatures_count} человек уже подписали</p>
-                    <Link to="/sign" className="ButtonsSign">
+                    <button onClick={handleSign} className="ButtonsSign">
                         Подписать
-                    </Link>
+                    </button>
                 </div>
             </div>
             <p className="Text">{petition.text}</p>

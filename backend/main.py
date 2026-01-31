@@ -104,14 +104,39 @@ def get_position_id(petition_id : int):
         cursor.execute(query, value)
         data = cursor.fetchone()
         if data:
-            print(f"SQL good")
             return data
         else:
-            print(f"SQL bad")
             return {"Error": "No petition"}
     except Error as e:
         print(f"SQL Error: {e}")
         return {"error": str(e)}
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post('/api/sign')
+def sign_petition(petition_id: int):
+    connection = get_db_connection()
+    if connection is None:
+        return 0
+    cursor = connection.cursor()
+    query = """
+        INSERT INTO
+        signatures
+        (`user_id`, `petition_id`, `verification_code`, `status`)
+        VALUES 
+        (%s, %s, %s, %s)
+    """
+    values = (11, petition_id, "", "digital")
+    try:
+        cursor.execute(query, values)
+        connection.commit()
+        return {"status": "success", "message": "Petition signed successfully"}
+    except Error as e:
+        print(f"SQL Error: {e}")
+        if e.errno == 1062:
+            return {"status": "error1062", "message": "Вы уже подписали эту петицию"}
+        return {"status": "error", "message": str(e)}
     finally:
         cursor.close()
         connection.close()
