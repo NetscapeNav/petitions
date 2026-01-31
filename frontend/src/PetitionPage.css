@@ -36,10 +36,10 @@
     background-color: #888080;
     border: none;
     font-family: Inter, sans-serif;
-    font-size: 2em;
+    font-size: 1.5em;
     font-weight: 800;
     color: white;
-    padding: 0.2em 60px;
+    padding: 0.2em 40px;
     cursor: pointer;
     text-decoration: none;
     align-self: flex-start;

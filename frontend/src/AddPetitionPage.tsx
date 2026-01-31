@@ -1,5 +1,6 @@
 import "./AddPetitionPage.css"
 import {useState, useEffect} from "react";
+import {Link} from "react-router-dom";
 
 function AddPetitionPage() {
 
@@ -18,6 +19,9 @@ function AddPetitionPage() {
 
     return (
         <div className="AddPetitionPage">
+            <Link to="/" className="ButtonBack">
+                ← Назад
+            </Link>
             <h1 className="AddPetitionHeader">Подайте <i>свою</i> петицию</h1>
             <form className="AddPetitionForm" onSubmit={handleSubmit}>
                 <label htmlFor="location">Локация проведения</label>
