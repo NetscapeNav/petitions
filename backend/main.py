@@ -35,7 +35,7 @@ def read_petitions():
         SELECT 
             id, 
             title as header, 
-            content_url as text, 
+            content as text, 
             pdf_url,
             (SELECT COUNT(*) FROM signatures WHERE signatures.petition_id = petitions.id) as signatures_count
         FROM petitions 
@@ -72,7 +72,7 @@ def handle_submit_petition(
     cursor = connection.cursor(dictionary=True)
     query = """
         INSERT INTO `petitions`
-        (`author_id`, `title`, `content_url`, `status`, `pdf_url`, `location`, `time_created`) 
+        (`author_id`, `title`, `content`, `status`, `pdf_url`, `location`, `time_created`) 
         VALUES 
         (%s, %s, %s, %s, %s, %s, NOW())
         """
@@ -88,5 +88,30 @@ def handle_submit_petition(
         cursor.close()
         connection.close()
 
-@app.post('/api/petitions/{petition_id}')
-def get_position():
+@app.get('/api/petitions/{petition_id}')
+def get_position_id(petition_id : int):
+    connection = get_db_connection()
+    if connection is None:
+        return {"error": "No DB connection"}
+    cursor = connection.cursor(dictionary=True)
+    query = """
+    SELECT title as header, content as text,
+    (SELECT COUNT(*) FROM signatures WHERE petitions.id = signatures.petition_id) as signatures_count
+    FROM petitions
+    WHERE petitions.id = %s"""
+    value = (petition_id, )
+    try:
+        cursor.execute(query, value)
+        data = cursor.fetchone()
+        if data:
+            print(f"SQL good")
+            return data
+        else:
+            print(f"SQL bad")
+            return {"Error": "No petition"}
+    except Error as e:
+        print(f"SQL Error: {e}")
+        return {"error": str(e)}
+    finally:
+        cursor.close()
+        connection.close()

@@ -18,7 +18,7 @@ function AddPetitionPage() {
 
     return (
         <div className="AddPetitionPage">
-            <h1 className="AddPetitionHeader">Подайте свою петицию</h1>
+            <h1 className="AddPetitionHeader">Подайте <i>свою</i> петицию</h1>
             <form className="AddPetitionForm" onSubmit={handleSubmit}>
                 <label htmlFor="location">Локация проведения</label>
                 <select name="location" required>

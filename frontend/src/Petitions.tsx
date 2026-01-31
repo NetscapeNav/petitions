@@ -55,11 +55,9 @@ function Main() {
                     <div className="ButtonsAndNumber">
                         <p>{petition.signatures_count} человек уже подписались</p>
                         <div className="Buttons">
-                            <button className="PetitionsSign" onClick={() => {
-                                window.location.href = petition.pdf_url
-                            }}>
+                            <Link to={"/petition/" + petition.id} className="PetitionsSign">
                                 Подписать
-                            </button>
+                            </Link>
                             <button className="PetitionsRefuse" onClick={handleRefuse}>
                                 Не интересует
                             </button>

@@ -6,6 +6,7 @@
 }
 
 .AddPetitionHeader {
+    font-size: 4em;
     margin: 0;
 }
 
@@ -13,7 +14,8 @@
     display: flex;
     font-family: Inter, sans-serif;
     flex-direction: column;
-    width: 120%;
+    width: 80%;
+    max-width: 900px;
 }
 
 .AddPetitionForm label {

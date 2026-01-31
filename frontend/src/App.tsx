@@ -5,16 +5,17 @@ import Header from "./Header";
 import Footer from "./Footer";
 import Main from "./Main";
 import AddPetitionPage from "./AddPetitionPage";
+import PetitionPage from "./PetitionPage";
 
 function App() {
   return (
       <BrowserRouter>
           <div className="App">
-              <Header/>
               <main>
                   <Routes>
                       <Route path="/" element={<Main/>}/>
                       <Route path="/add" element={<AddPetitionPage/>}/>
+                      <Route path="/petition/:id" element={<PetitionPage/>}/>
                   </Routes>
               </main>
               <Footer/>

@@ -81,6 +81,7 @@
     color: white;
     padding: 0.2em 60px;
     cursor: pointer;
+    text-decoration: none;
 }
 
 .PetitionsRefuse {

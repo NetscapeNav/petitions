@@ -1,0 +1,58 @@
+.PetitionInfo {
+    display: flex;
+    flex-direction: column;
+    align-items: start;
+    justify-content: start;
+    height: 90vh;
+    width: 80vw;
+}
+
+.PetitionHeaderDiv {
+    display: flex;
+    flex-direction: column;
+}
+
+.PetitionInfoTitle {
+    display: flex;
+    flex-direction: column;
+    font-size: 3em;
+}
+
+.ActionDiv {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.signaturesCount {
+    font-size: 1em;
+    margin: 0;
+}
+
+.ButtonBack {
+    background-color: #888080;
+    border: none;
+    font-family: Inter, sans-serif;
+    font-size: 2em;
+    font-weight: 800;
+    color: white;
+    padding: 0.2em 60px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.ButtonsSign {
+    background-color: #C82D2D;
+    border: none;
+    font-family: Inter, sans-serif;
+    font-size: 2em;
+    font-weight: 800;
+    color: white;
+    padding: 0.2em 60px;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.Text {
+
+}
