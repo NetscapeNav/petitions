@@ -1,13 +1,16 @@
 import Petitions from "./Petitions";
-import AddPetition from "./AddPetition";
-
+import {Link} from "react-router-dom";
+import React from "react";
+import './Main.css';
 
 function Main() {
     return (
-        <>
+        <div className="Main">
             <Petitions/>
-            <AddPetition/>
-        </>
+            <Link to="/add" className="AddPetition">
+                Разместить свою петицию
+            </Link>
+        </div>
     );
 }
 

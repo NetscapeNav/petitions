@@ -1,11 +1,18 @@
+.Main {
+    display: flex;
+    flex-direction: column;
+}
+
 .AddPetition {
+    text-align: center;
     background-color: #C82D2D;
     border: none;
+    width: 50%;
     font-family: Inter, sans-serif;
-    font-size: 2em;
+    font-size: 1.75em;
     font-weight: 800;
     color: white;
     padding: 10px 60px;
-    margin-top: 1em;
     cursor: pointer;
+    text-decoration: none;
 }

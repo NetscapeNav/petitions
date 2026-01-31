@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from typing import Optional
+
+from fastapi import FastAPI, Form, UploadFile, File
 import mysql.connector
 from mysql.connector import Error
 from starlette.middleware.cors import CORSMiddleware
@@ -55,3 +57,36 @@ def petitions_count():
     cursor.close()
     connection.close()
     return data['total'] if data else 0
+
+@app.post('/api/petitions/submit')
+def handle_submit_petition(
+    header: str = Form(...),
+    text: str = Form(...),
+    location: str = Form(...),
+    feedback: str = Form(...),
+    file: Optional[UploadFile] = File(None)
+):
+    connection = get_db_connection()
+    if connection is None:
+        return 0
+    cursor = connection.cursor(dictionary=True)
+    query = """
+        INSERT INTO `petitions`
+        (`author_id`, `title`, `content_url`, `status`, `pdf_url`, `location`, `time_created`) 
+        VALUES 
+        (%s, %s, %s, %s, %s, %s, NOW())
+        """
+    values = (0, header, text, "pending", "", location)
+    try:
+        cursor.execute(query, values)
+        connection.commit()
+        return {"status": "success", "message": "Petition submitted successfully"}
+    except Error as e:
+        print(f"Error: {e}")
+        return {"status": "error", "message": str(e)}
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post('/api/petitions/{petition_id}')
+def get_position():

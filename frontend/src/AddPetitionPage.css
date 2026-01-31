@@ -1,0 +1,39 @@
+.AddPetitionPage {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+}
+
+.AddPetitionHeader {
+    margin: 0;
+}
+
+.AddPetitionForm {
+    display: flex;
+    font-family: Inter, sans-serif;
+    flex-direction: column;
+    width: 120%;
+}
+
+.AddPetitionForm label {
+    font-weight: 550;
+    font-size: 1.2em;
+    margin-top: 1em;
+}
+
+.AddPetitionForm select, input, textarea {
+    font-family: Inter, sans-serif;
+    font-size: 0.8em;
+}
+
+.PetitionSubmit {
+    margin-top: 1em;
+    font-size: 2em;
+    font-family: Inter, sans-serif;
+    font-weight: 800;
+    padding: 0.25em;
+    background-color: #C82D2D;
+    color: white;
+    border: none;
+}

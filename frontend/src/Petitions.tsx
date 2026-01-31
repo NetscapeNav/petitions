@@ -1,7 +1,8 @@
-import {useState, useEffect} from "react";
+import React, {useState, useEffect} from "react";
 /*import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCards } from 'swiper/modules';*/
 import './Petitions.css';
+import {Link} from "react-router-dom";
 
 interface Petition {
     id: number;
@@ -44,27 +45,29 @@ function Main() {
     const petition = petitions[currentIndex];
 
     return (
-        <div className="PetitionsDiv">
-            <div className="old-2"></div>
-            <div className="old-1"></div>
-            <div className="Petition" key={petition.id}>
-                <h3 className="PetitionsHeader">{petition.header}</h3>
-                <p className="PetitionsText">{petition.text}</p>
-                <div className="ButtonsAndNumber">
-                    <p>{petition.signatures_count} человек уже подписались</p>
-                    <div className="Buttons">
-                        <button className="PetitionsSign" onClick={() => {
-                            window.location.href = petition.pdf_url
-                        }}>
-                            Подписать
-                        </button>
-                        <button className="PetitionsRefuse" onClick={handleRefuse}>
-                            Не интересует
-                        </button>
+        <>
+            <div className="PetitionsDiv">
+                <div className="old-2"></div>
+                <div className="old-1"></div>
+                <div className="Petition" key={petition.id}>
+                    <h3 className="PetitionsHeader">{petition.header}</h3>
+                    <p className="PetitionsText">{petition.text}</p>
+                    <div className="ButtonsAndNumber">
+                        <p>{petition.signatures_count} человек уже подписались</p>
+                        <div className="Buttons">
+                            <button className="PetitionsSign" onClick={() => {
+                                window.location.href = petition.pdf_url
+                            }}>
+                                Подписать
+                            </button>
+                            <button className="PetitionsRefuse" onClick={handleRefuse}>
+                                Не интересует
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
+        </>
     );
 }
 
