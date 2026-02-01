@@ -110,8 +110,10 @@ def get_position_id(user_id: int, petition_id : int):
     if connection is None:
         return {"error": "No DB connection"}
     cursor = connection.cursor(dictionary=True)
+
+
     query = """
-    SELECT title as header, content as text,
+    SELECT title as header, content as text, status,
     EXISTS(
         SELECT 1 FROM signatures 
         WHERE signatures.petition_id = petitions.id AND signatures.user_id = %s
@@ -124,9 +126,11 @@ def get_position_id(user_id: int, petition_id : int):
         cursor.execute(query, value)
         data = cursor.fetchone()
         if data:
+            if data['status'] == "draft":
+                return {"error": "No petition"}
             return data
         else:
-            return {"Error": "No petition"}
+            return {"error": "No petition"}
     except Error as e:
         print(f"SQL Error: {e}")
         return {"error": str(e)}
@@ -139,16 +143,36 @@ def sign_petition(petition_id: int, user_id: int):
     connection = get_db_connection()
     if connection is None:
         return {"error": "Database connection failed"}
-    cursor = connection.cursor()
-    query = """
-        INSERT INTO
-        signatures
-        (`user_id`, `petition_id`, `verification_code`, `status`)
-        VALUES 
-        (%s, %s, %s, %s)
-    """
-    values = (user_id, petition_id, "", "digital")
+    cursor = connection.cursor(dictionary=True)
+
     try:
+        cursor.execute("SELECT status, location FROM petitions WHERE petitions.id = %s", (petition_id, ))
+        petition = cursor.fetchone()
+        if not petition:
+            return {"status": "error", "message": "No petition"}
+
+        cursor.execute("SELECT region FROM users WHERE users.id = %s", (user_id, ))
+        user_region = cursor.fetchone()
+        if not user_region:
+            return {"status": "error", "message": "No user"}
+
+        if petition['status'] == "draft":
+            return {"status": "error", "message": "No petition"}
+
+        user_region = user_region['region']
+        location = petition['location']
+
+        if user_region != location:
+            return {"status": "error", "message": "Different locations"}
+
+        query = """
+            INSERT INTO
+            signatures
+            (`user_id`, `petition_id`, `verification_code`, `status`)
+            VALUES 
+            (%s, %s, %s, %s)
+        """
+        values = (user_id, petition_id, "", "digital")
         cursor.execute(query, values)
         connection.commit()
         return {"status": "success", "message": "Petition signed successfully"}

@@ -25,6 +25,9 @@ function PetitionPage() {
                     setPetition(data);
                 } else {
                     console.error("Бэкенд вернул ошибку:", data.error);
+                    if (data.error === "No petition") {
+                        alert("Петиция не существует");
+                    }
                 }})
             .catch(error => console.log(error));
     }, [id, userId]);
@@ -54,6 +57,8 @@ function PetitionPage() {
             } else {
                 if (data.status === "error1062") {
                     alert("Вы уже подписаны на эту петицию!");
+                } else if (data.message === "Different location") {
+                    alert("Петиция относится к другой местности!");
                 }
                 console.error("Бэкенд вернул ошибку:", data.error);
             }
