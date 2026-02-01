@@ -71,20 +71,28 @@ def handle_submit_petition(
     header: str = Form(...),
     text: str = Form(...),
     location: str = Form(...),
-    feedback: str = Form(...),
+    author_id: str = Form(...),
     file: Optional[UploadFile] = File(None)
 ):
     connection = get_db_connection()
     if connection is None:
         return {"error": "Database connection failed"}
     cursor = connection.cursor(dictionary=True)
+
+    cursor.execute("SELECT id FROM users WHERE id = %s", (author_id,))
+    if not cursor.fetchone():
+        cursor.close()
+        connection.close()
+        return {"status": "error", "code": "USER_NOT_FOUND",
+                "message": "Пользователь не найден. Пожалуйста, войдите заново."}
+
     query = """
         INSERT INTO `petitions`
         (`author_id`, `title`, `content`, `status`, `pdf_url`, `location`, `time_created`) 
         VALUES 
         (%s, %s, %s, %s, %s, %s, NOW())
         """
-    values = (0, header, text, "draft", "", location)
+    values = (author_id, header, text, "draft", "", location)
     try:
         cursor.execute(query, values)
         connection.commit()

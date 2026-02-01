@@ -21,14 +21,23 @@ function AddPetitionPage() {
 
         const data = new FormData(event.currentTarget);
 
+        data.append("author_id", userId);
+
         fetch("http://localhost:8000/api/petitions/submit", {
             method: "POST",
             body: data,
         })
             .then(response => response.json())
             .then(result => {
-                alert("Спасибо за отправку! В ближайшее время мы рассмотрим ваше предложение и свяжемся с вами для дальнейшего сопровождения.");
-                navigate("/");
+                if (result.status === "success") {
+                    alert("Спасибо за отправку! В ближайшее время мы рассмотрим ваше предложение и свяжемся с вами для дальнейшего сопровождения.");
+                    navigate("/");
+                } else {
+                    alert("Ваша сессия истекла или пользователь удален. Пожалуйста, войдите снова.");
+                    localStorage.removeItem("user_id");
+                    navigate("/login");
+                    return;
+                }
             })
             .catch(err => console.error(err));
     }
@@ -45,8 +54,8 @@ function AddPetitionPage() {
             <h1 className="AddPetitionHeader">Подайте <i>свою</i> петицию</h1>
             <form className="AddPetitionForm" onSubmit={handleSubmit}>
                 <label htmlFor="location">Локация проведения</label>
-                <select name="location" required>
-                    <option selected disabled>Выберите место проведения</option>
+                <select name="location" required defaultValue="">
+                    <option value="" disabled>Выберите место проведения</option>
                     <option value="NSU">НГУ</option>
                     <option value="IRNITU">ИрНИТУ</option>
                     <option value="SPB">Санкт-Петербург</option>
@@ -56,8 +65,6 @@ function AddPetitionPage() {
                 <input type="text" id="header" placeholder="Напишите сюда..." name="header" required/>
                 <label htmlFor="text">Текст петиции</label>
                 <textarea id="text" placeholder="Напишите сюда..." name="text" required></textarea>
-                <label htmlFor="feedback">Обратная связь</label>
-                <input type="text" id="feedback" placeholder="Напишите сюда..." name="feedback" required/>
                 <label htmlFor="file">Файл PDF</label>
                 <input type="file" id="file" name="file"/>
                 <button className="PetitionSubmit" type="submit">Отправить</button>
