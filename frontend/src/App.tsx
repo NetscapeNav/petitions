@@ -6,6 +6,7 @@ import Footer from "./Footer";
 import Main from "./Main";
 import AddPetitionPage from "./AddPetitionPage";
 import PetitionPage from "./PetitionPage";
+import Auth from "./Auth";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
                       <Route path="/" element={<Main/>}/>
                       <Route path="/add" element={<AddPetitionPage/>}/>
                       <Route path="/petition/:id" element={<PetitionPage/>}/>
+                      <Route path="/login" element={<Auth/>}/>
                   </Routes>
               </main>
               <Footer/>
