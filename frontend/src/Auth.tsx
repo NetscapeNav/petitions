@@ -1,6 +1,6 @@
 import {useState, useEffect} from "react";
 import './Auth.css'
-import {Link, useParams} from "react-router-dom";
+import {Link, useParams, useNavigate} from "react-router-dom";
 
 interface TelegramUser {
     id: number;
@@ -16,11 +16,42 @@ declare global {
 }
 
 function Auth() {
+    let navigate = useNavigate();
+    const petitionPrev = localStorage.getItem('petition_prev');
+    const petition = petitionPrev ? petitionPrev : "";
     const [id, setId] = useState(0);
 
     useEffect(() => {
         window.onTelegramAuth = (user: TelegramUser) => {
-            console.log("Ура! Телеграм вернул пользователя:", user);
+            console.log("Телеграм вернул пользователя:", user);
+
+            try {
+                fetch("http://localhost:8000/api/login", {
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(user),
+                })
+                    .then((res) => res.json())
+                    .then(data => {
+                        console.log(data);
+                        if (data.status === "success") {
+                            localStorage.setItem("user_id", data.user_id);
+                            localStorage.removeItem('petition_prev');
+                            if (petition === "") {
+                                navigate("/");
+                            } else {
+                                navigate(`/petition/${petition}`);
+                            }
+                        } else {
+                            alert("Ошибка входа: " + (data.error || data.message));
+                        }
+                    })
+                    .catch(err => console.log(err));
+            } catch (e) {
+                console.log("Error:", e);
+            }
             alert(`Привет, ${user.first_name}! Твой ID: ${user.id}`);
         }
 
@@ -48,10 +79,6 @@ function Auth() {
             delete window.onTelegramAuth;
         };
     }, []);
-
-    function authorize() {
-
-    }
 
     return (
         <div className="AuthDiv">

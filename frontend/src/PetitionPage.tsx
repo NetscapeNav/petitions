@@ -1,6 +1,6 @@
 import {useState, useEffect} from "react";
 import './PetitionPage.css'
-import {Link, useParams} from "react-router-dom";
+import {Link, useParams, useNavigate} from "react-router-dom";
 
 interface Petition {
     header: string;
@@ -10,11 +10,15 @@ interface Petition {
 }
 
 function PetitionPage() {
+    let navigate = useNavigate();
     const {id}  = useParams();
     const [petition, setPetition] = useState<Petition|null>(null);
+    const storedId = localStorage.getItem("user_id");
+    const userId = storedId ? storedId : "0";
 
     useEffect(() => {
-        fetch(`http://localhost:8000/api/petitions/${id}?user_id=1`)
+        console.log(userId);
+        fetch(`http://localhost:8000/api/petitions/${id}?user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 if (!data.error) {
@@ -23,24 +27,30 @@ function PetitionPage() {
                     console.error("Бэкенд вернул ошибку:", data.error);
                 }})
             .catch(error => console.log(error));
-    }, [id]);
+    }, [id, userId]);
 
     function handleSign(event: React.MouseEvent<HTMLButtonElement>) {
         event.preventDefault();
 
-        fetch(`http://localhost:8000/api/sign?petition_id=${id}&user_id=1`, {
+        if (userId === "0") {
+            localStorage.setItem("petition_prev", id ? id : "");
+            navigate("/login");
+            return;
+        }
+
+        fetch(`http://localhost:8000/api/sign?petition_id=${id}&user_id=${userId}`, {
             method: "POST",
         })
         .then(response => response.json())
         .then(data => {
             console.log(data);
             if (data.status === "success") {
-                alert("Спасибо за подписку!");
                 setPetition(prev => prev ? {
                     ...prev,
                     signatures_count: prev.signatures_count + 1,
                     is_signed: 1,
                 } : null);
+                alert("Спасибо за подписку!");
             } else {
                 if (data.status === "error1062") {
                     alert("Вы уже подписаны на эту петицию!");

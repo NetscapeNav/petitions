@@ -16,9 +16,11 @@ interface Petition {
 function Main() {
     const [petitions, setPetitions] = useState<Petition[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const storedId = localStorage.getItem("user_id");
+    const userId = storedId ? storedId : "0";
 
     useEffect(() => {
-        fetch("http://localhost:8000/api/petitions?user_id=1")
+        fetch(`http://localhost:8000/api/petitions?user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data);

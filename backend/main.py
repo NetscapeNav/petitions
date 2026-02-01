@@ -4,6 +4,7 @@ from fastapi import FastAPI, Form, UploadFile, File
 import mysql.connector
 from mysql.connector import Error
 from starlette.middleware.cors import CORSMiddleware
+import random
 
 import config
 from auth import user_telegram_verification
@@ -95,7 +96,7 @@ def handle_submit_petition(
         connection.close()
 
 @app.get('/api/petitions/{petition_id}')
-def get_position_id(petition_id : int, user_id: int):
+def get_position_id(user_id: int, petition_id : int):
     connection = get_db_connection()
     if connection is None:
         return {"error": "No DB connection"}
@@ -104,12 +105,12 @@ def get_position_id(petition_id : int, user_id: int):
     SELECT title as header, content as text,
     EXISTS(
         SELECT 1 FROM signatures 
-        WHERE signatures.petition_id = petitions.id AND signatures.user_id = """ + str(user_id) + """
+        WHERE signatures.petition_id = petitions.id AND signatures.user_id = %s
     ) as is_signed,
     (SELECT COUNT(*) FROM signatures WHERE petitions.id = signatures.petition_id) as signatures_count
     FROM petitions
     WHERE petitions.id = %s"""
-    value = (petition_id, )
+    value = (user_id, petition_id, )
     try:
         cursor.execute(query, value)
         data = cursor.fetchone()
@@ -188,7 +189,7 @@ def login(data: dict):
             VALUES
             (%s, %s, %s, NOW(), %s, %s, %s)
         """
-        values = (tg_id, 0, "", "", full_name, "")
+        values = (tg_id, 1, str(random.randint(100000,999999)), "", full_name, "")
 
         cursor.execute(ins_query, values)
         connection.commit()

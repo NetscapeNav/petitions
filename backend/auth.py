@@ -2,8 +2,7 @@ import hashlib
 import hmac
 
 def user_telegram_verification(data, bot_token):
-    hash = ""
-    if not data['hash']:
+    if 'hash' not in data or not data['hash']:
         return False
 
     hash = data['hash']
@@ -26,7 +25,3 @@ def user_telegram_verification(data, bot_token):
         return True
     else:
         return False
-
-
-
-print(user_telegram_verification({"name": "aaa", "hash": "aaaa"}, "ddddddddddddd"))
