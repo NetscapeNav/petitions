@@ -120,7 +120,7 @@ function PetitionPage() {
                                 Поделиться
                             </button>
                         )}
-                        {parseInt(userId) === petition.author_id && (
+                        {(parseInt(userId) === petition.author_id && petition.signatures_count > 0) && (
                                 <button onClick={handleAlert} className="ButtonsAlert">
                                     Позвать всех
                                 </button>
