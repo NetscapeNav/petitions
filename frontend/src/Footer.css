@@ -3,3 +3,8 @@
     left: 10px;
     bottom: 0;
 }
+
+.Footer a {
+    background-color: #000;
+    color: white;
+}

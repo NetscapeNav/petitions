@@ -58,7 +58,7 @@ function Auth() {
             <h1>Вход через Telegram</h1>
             <p>Для подписания петиции необходимо подтвердить личность</p>
 
-            <div id="telegram-login-container"></div>
+            <div className="AuthContainer" id="telegram-login-container"></div>
         </div>
     );
 }

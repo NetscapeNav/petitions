@@ -126,3 +126,18 @@
     cursor: pointer;
     align-self: flex-start;
 }
+
+
+@media (prefers-color-scheme: dark) {
+    .Petition, .old-1, .old-2 {
+        background-color: #570C0C;
+    }
+
+    .PetitionWatch {
+        background-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .PetitionsRefuse {
+        background-color: #742323;
+    }
+}

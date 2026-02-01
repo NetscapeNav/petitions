@@ -39,3 +39,11 @@
     color: white;
     border: none;
 }
+
+@media (prefers-color-scheme: dark) {
+    .AddPetitionForm select, input, textarea {
+        background-color: #000;
+        border: 1px solid white;
+        color: white;
+    }
+}

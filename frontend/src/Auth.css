@@ -5,3 +5,12 @@
     justify-content: center;
     height: 80vh;
 }
+
+.AuthDiv h1 {
+    font-size: 3.5em;
+    margin: 0;
+}
+
+.AuthContainer {
+    margin-top: 2em;
+}

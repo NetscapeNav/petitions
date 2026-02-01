@@ -10,6 +10,13 @@
   justify-content: center;
   color: black;
 }
+
+@media (prefers-color-scheme: dark) {
+  .App {
+    background-color: #000;
+    color: white;
+  }
+}
 /*
 .App-logo {
   height: 40vmin;
