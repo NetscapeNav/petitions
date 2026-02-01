@@ -27,6 +27,12 @@
     gap: 10px;
 }
 
+.ActionDivButtons {
+    display: flex;
+    flex-direction: row;
+    gap: 10px;
+}
+
 .signaturesCount {
     font-size: 1em;
     margin: 0;
@@ -47,6 +53,32 @@
 
 .ButtonsSign {
     background-color: #C82D2D;
+    border: none;
+    font-family: Inter, sans-serif;
+    font-size: 2em;
+    font-weight: 800;
+    color: white;
+    padding: 0.2em 60px;
+    cursor: pointer;
+    text-decoration: none;
+    align-self: flex-start;
+}
+
+.ButtonsShare {
+    background-color: #1274a8;
+    border: none;
+    font-family: Inter, sans-serif;
+    font-size: 2em;
+    font-weight: 800;
+    color: white;
+    padding: 0.2em 60px;
+    cursor: pointer;
+    text-decoration: none;
+    align-self: flex-start;
+}
+
+.ButtonsAlert {
+    background-color: rgba(255, 0, 0, 0.41);
     border: none;
     font-family: Inter, sans-serif;
     font-size: 2em;

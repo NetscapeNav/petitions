@@ -1,10 +1,13 @@
 from typing import Optional
+from xml.sax import parse
 
 from fastapi import FastAPI, Form, UploadFile, File
 import mysql.connector
 from mysql.connector import Error
+from mysql.connector.aio import connect
 from starlette.middleware.cors import CORSMiddleware
 import random
+import requests
 
 import config
 from auth import user_telegram_verification
@@ -105,15 +108,14 @@ def handle_submit_petition(
         connection.close()
 
 @app.get('/api/petitions/{petition_id}')
-def get_position_id(user_id: int, petition_id : int):
+def get_petition_id(user_id: int, petition_id : int):
     connection = get_db_connection()
     if connection is None:
         return {"error": "No DB connection"}
     cursor = connection.cursor(dictionary=True)
 
-
     query = """
-    SELECT title as header, content as text, status,
+    SELECT id, author_id, title as header, content as text, status,
     EXISTS(
         SELECT 1 FROM signatures 
         WHERE signatures.petition_id = petitions.id AND signatures.user_id = %s
@@ -163,7 +165,7 @@ def sign_petition(petition_id: int, user_id: int):
         location = petition['location']
 
         if user_region != location:
-            return {"status": "error", "message": "Different locations"}
+            return {"status": "errorloc", "message": "Different locations"}
 
         query = """
             INSERT INTO
@@ -240,3 +242,67 @@ def login(data: dict):
     finally:
         cursor.close()
         connection.close()
+
+def send_telegram_message(tg_id:int, text: str):
+    url = f"https://api.telegram.org/bot{config.TOKEN}/sendMessage"
+    payload = {
+        "chat_id": tg_id,
+        "text": text,
+        "parse_mode": "HTML"
+    }
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        print(f"Ошибка отправки пользователю {tg_id}: {e}")
+
+def telegram_author_call(petition_id: int):
+    connection = get_db_connection()
+    if connection is None:
+        return {"status": "error", "message": "Database connection failed"}
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("SELECT users.tg_id FROM signatures JOIN users ON signatures.user_id = users.id WHERE petition_id = %s", (petition_id, ))
+        tg_id_list = cursor.fetchall()
+
+        count = 0
+        for row in tg_id_list:
+            tg_id = row['tg_id']
+            send_telegram_message(tg_id, "По вашей одной из подписанных петиций намечается сбор бумажных подписей!")
+            count += 1
+
+        return {"status": "success", "message": f"Отправлено {count} уведомлений"}
+
+    except Error as e:
+        print(f"SQL Error: {e}")
+        return {"status": "error", "message": str(e)}
+    finally:
+        cursor.close()
+        connection.close()
+
+@app.post('/api/petitions/{petition_id}/notify')
+def petition_notify(petition_id: int, user_id: int):
+    connection = get_db_connection()
+    if connection is None:
+        return {"status": "error", "message": "Database connection failed"}
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("""
+            SELECT id FROM
+            petitions
+            WHERE petitions.id = %s AND petitions.author_id = %s
+        """, (petition_id, user_id))
+        data = cursor.fetchone()
+
+        if not data:
+            return {"status": "error", "message": "Not an author"}
+
+    except Error as e:
+        print(f"SQL Error: {e}")
+        return {"status": "error", "message": str(e)}
+    finally:
+        cursor.close()
+        connection.close()
+
+    return telegram_author_call(petition_id)

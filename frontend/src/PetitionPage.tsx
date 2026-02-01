@@ -3,6 +3,8 @@ import './PetitionPage.css'
 import {Link, useParams, useNavigate} from "react-router-dom";
 
 interface Petition {
+    id: number;
+    author_id: number;
     header: string;
     text: string;
     signatures_count: number;
@@ -57,19 +59,46 @@ function PetitionPage() {
             } else {
                 if (data.status === "error1062") {
                     alert("Вы уже подписаны на эту петицию!");
-                } else if (data.message === "Different location") {
+                } else if (data.status === "errorloc") {
                     alert("Петиция относится к другой местности!");
                 }
-                console.error("Бэкенд вернул ошибку:", data.error);
             }
         })
-        .catch(error => console.log(error));
+        .catch(error => console.error(error));
+    }
+
+    function handleShare(event: React.MouseEvent<HTMLButtonElement>) {
+        event.preventDefault();
+
+        const url = window.location.href;
+        navigator.clipboard.writeText(url)
+            .then(() => alert("Ссылка скопирована в буфер обмена!"))
+            .catch(err => console.error("Ошибка копирования:", err));
     }
 
     if (!petition) {
         return (
             <div>Загрузка петиции...</div>
         );
+    }
+
+    function handleAlert() {
+        if (!window.confirm("Вы уверены? Это отправит уведомления всем подписавшимся в Telegram")) {
+            return;
+        }
+
+        fetch(`http://localhost:8000/api/petitions/${id}/notify?user_id=${userId}`, {
+            method: "POST"
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === "success") {
+                    alert(data.message);
+                } else {
+                    alert("При отправке произошла ошибка");
+                }
+            })
+            .catch(error => console.error(error));
     }
 
     return (
@@ -81,9 +110,22 @@ function PetitionPage() {
                 <h1 className="PetitionInfoTitle">{petition.header}</h1>
                 <div className="ActionDiv">
                     <p className="signaturesCount">{petition.signatures_count} человек уже подписали</p>
-                    <button onClick={handleSign} disabled={petition.is_signed === 1} className={!petition.is_signed ? "ButtonsSign" : "PetitionWatch"}>
-                        {!petition.is_signed ? "Подписать" : "Подписано"}
-                    </button>
+                    <div className="ActionDivButtons">
+                        <button onClick={handleSign} disabled={petition.is_signed === 1}
+                                className={!petition.is_signed ? "ButtonsSign" : "PetitionWatch"}>
+                            {!petition.is_signed ? "Подписать" : "Подписано"}
+                        </button>
+                        {petition.is_signed === 1 && (
+                            <button onClick={handleShare} className="ButtonsShare">
+                                Поделиться
+                            </button>
+                        )}
+                        {parseInt(userId) === petition.author_id && (
+                                <button onClick={handleAlert} className="ButtonsAlert">
+                                    Позвать всех
+                                </button>
+                        )}
+                    </div>
                 </div>
             </div>
             <p className="Text">{petition.text}</p>
