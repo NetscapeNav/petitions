@@ -41,6 +41,8 @@ function Auth() {
                             localStorage.removeItem('petition_prev');
                             if (petition === "") {
                                 navigate("/");
+                            } else if (petition === "add") {
+                                navigate("/add");
                             } else {
                                 navigate(`/petition/${petition}`);
                             }

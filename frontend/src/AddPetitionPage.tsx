@@ -1,11 +1,24 @@
 import "./AddPetitionPage.css"
 import {useState, useEffect} from "react";
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 
 function AddPetitionPage() {
+    const navigate = useNavigate();
+    const storedId = localStorage.getItem("user_id");
+    const userId = storedId ? storedId : "0";
+
+    useEffect(() => {
+        if (userId === "0") {
+            localStorage.setItem("petition_prev", "add");
+            navigate("/login");
+        }
+    }, [userId, navigate]);
 
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
+
+        if (userId === "0") return;
+
         const data = new FormData(event.currentTarget);
 
         fetch("http://localhost:8000/api/petitions/submit", {
@@ -13,8 +26,15 @@ function AddPetitionPage() {
             body: data,
         })
             .then(response => response.json())
-            .then(result => alert("Спасибо за отправку! Мы рассмотрим ваше предложение в ближайшее время и свяжемся с вами."))
+            .then(result => {
+                alert("Спасибо за отправку! В ближайшее время мы рассмотрим ваше предложение и свяжемся с вами для дальнейшего сопровождения.");
+                navigate("/");
+            })
             .catch(err => console.error(err));
+    }
+
+    if (userId === "0") {
+        return null;
     }
 
     return (

@@ -8,6 +8,7 @@ import random
 
 import config
 from auth import user_telegram_verification
+from whitelist import whilelist
 
 app = FastAPI()
 
@@ -45,7 +46,7 @@ def read_petitions(user_id: int):
             ) as is_signed,
             (SELECT COUNT(*) FROM signatures WHERE signatures.petition_id = petitions.id) as signatures_count
         FROM petitions 
-        WHERE status ='ongoing'
+        WHERE status ='ongoing' OR status ='ready_for_paper'
     """
     cursor.execute(query, (user_id, ))
     data = cursor.fetchall()
@@ -83,7 +84,7 @@ def handle_submit_petition(
         VALUES 
         (%s, %s, %s, %s, %s, %s, NOW())
         """
-    values = (0, header, text, "pending", "", location)
+    values = (0, header, text, "draft", "", location)
     try:
         cursor.execute(query, values)
         connection.commit()
@@ -189,7 +190,12 @@ def login(data: dict):
             VALUES
             (%s, %s, %s, NOW(), %s, %s, %s)
         """
-        values = (tg_id, 1, str(random.randint(100000,999999)), "", full_name, "")
+        values = (tg_id,
+                  1 if tg_id in whilelist else 0,
+                  str(random.randint(100000,999999)),
+                  "",
+                  full_name,
+                  whilelist[tg_id] if tg_id in whilelist else "ы")
 
         cursor.execute(ins_query, values)
         connection.commit()
