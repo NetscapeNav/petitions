@@ -89,36 +89,37 @@ def handle_submit_petition(
         return {"error": "Database connection failed"}
     cursor = connection.cursor(dictionary=True)
 
-    cursor.execute("SELECT id FROM users WHERE id = %s", (author_id,))
-    if not cursor.fetchone():
-        cursor.close()
-        connection.close()
-        return {"status": "error", "code": "USER_NOT_FOUND",
-                "message": "Пользователь не найден. Пожалуйста, войдите заново."}
-
-    if files:
-        MAX_TOTAL_SIZE = 50 * 1024 * 1024
-        total_size = 0
-
-        for file in files:
-            file.file.seek(0, 2)
-            file_size = file.file.tell()
-            file.file.seek(0)
-
-            total_size += file_size
-
-        if total_size > MAX_TOTAL_SIZE:
-            return {"status": "error",
-                    "message": f"Общий размер файлов превышает {MAX_TOTAL_SIZE / (1024 * 1024)} МБ"}
-
-    query = """
-        INSERT INTO `petitions`
-        (`author_id`, `title`, `content`, `status`, `pdf_url`, `location`, `time_created`) 
-        VALUES 
-        (%s, %s, %s, %s, %s, %s, NOW())
-        """
-    values = (author_id, header, text, "draft", "pending" if files else "", location)
     try:
+        cursor.execute("SELECT id FROM users WHERE id = %s", (author_id,))
+        if not cursor.fetchone():
+            cursor.close()
+            connection.close()
+            return {"status": "error", "code": "USER_NOT_FOUND",
+                    "message": "Пользователь не найден. Пожалуйста, войдите заново."}
+
+        if files:
+            MAX_TOTAL_SIZE = 50 * 1024 * 1024
+            total_size = 0
+
+            for file in files:
+                file.file.seek(0, 2)
+                file_size = file.file.tell()
+                file.file.seek(0)
+
+                total_size += file_size
+
+            if total_size > MAX_TOTAL_SIZE:
+                return {"status": "error",
+                        "message": f"Общий размер файлов превышает {MAX_TOTAL_SIZE / (1024 * 1024)} МБ"}
+
+        query = """
+            INSERT INTO `petitions`
+            (`author_id`, `title`, `content`, `status`, `pdf_url`, `location`, `time_created`) 
+            VALUES 
+            (%s, %s, %s, %s, %s, %s, NOW())
+            """
+        values = (author_id, header, text, "draft", "pending" if files else "", location)
+
         cursor.execute(query, values)
         connection.commit()
 
@@ -271,7 +272,7 @@ def login(data: dict):
                   str(random.randint(100000,999999)),
                   "",
                   full_name,
-                  whilelist[tg_id] if tg_id in whilelist else "ы")
+                  whilelist[tg_id] if tg_id in whilelist else "")
 
         cursor.execute(ins_query, values)
         connection.commit()
