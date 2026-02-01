@@ -6,6 +6,7 @@ from mysql.connector import Error
 from starlette.middleware.cors import CORSMiddleware
 
 import config
+from auth import user_telegram_verification
 
 app = FastAPI()
 
@@ -151,19 +152,29 @@ def sign_petition(petition_id: int, user_id: int):
         connection.close()
 
 @app.post('/api/login')
-def login(tg_id: int, full_name: str = "Anonymous"):
+def login(data: dict):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Database connection failed"}
     cursor = connection.cursor(dictionary=True)
     try:
+        is_valid = user_telegram_verification(data, config.TOKEN)
+
+        if not is_valid:
+            return {"error": "Неавторизованный запрос"}
+
+        tg_id = data['id']
+        first_name = data.get('first_name', '')
+        last_name = data.get('last_name', '')
+        full_name = f"{first_name} {last_name}".strip()
+
         chk_query = """
             SELECT * FROM
             `users`
             WHERE
             tg_id = %s
         """
-        values = (tg_id, )
+        values = (data['id'], )
         cursor.execute(chk_query, values)
         user = cursor.fetchone()
 
