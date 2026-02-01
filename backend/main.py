@@ -1,6 +1,9 @@
-from typing import Optional
+import os
+import shutil
+from typing import Optional, List
 from xml.sax import parse
 
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Form, UploadFile, File
 import mysql.connector
 from mysql.connector import Error
@@ -21,6 +24,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+os.makedirs("uploads", exist_ok=True)
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 def get_db_connection():
     connection = None
@@ -75,7 +82,7 @@ def handle_submit_petition(
     text: str = Form(...),
     location: str = Form(...),
     author_id: str = Form(...),
-    file: Optional[UploadFile] = File(None)
+    files: List[UploadFile] = File(None)
 ):
     connection = get_db_connection()
     if connection is None:
@@ -89,16 +96,51 @@ def handle_submit_petition(
         return {"status": "error", "code": "USER_NOT_FOUND",
                 "message": "Пользователь не найден. Пожалуйста, войдите заново."}
 
+    if files:
+        MAX_TOTAL_SIZE = 50 * 1024 * 1024
+        total_size = 0
+
+        for file in files:
+            file.file.seek(0, 2)
+            file_size = file.file.tell()
+            file.file.seek(0)
+
+            total_size += file_size
+
+        if total_size > MAX_TOTAL_SIZE:
+            return {"status": "error",
+                    "message": f"Общий размер файлов превышает {MAX_TOTAL_SIZE / (1024 * 1024)} МБ"}
+
     query = """
         INSERT INTO `petitions`
         (`author_id`, `title`, `content`, `status`, `pdf_url`, `location`, `time_created`) 
         VALUES 
         (%s, %s, %s, %s, %s, %s, NOW())
         """
-    values = (author_id, header, text, "draft", "", location)
+    values = (author_id, header, text, "draft", "pending" if files else "", location)
     try:
         cursor.execute(query, values)
         connection.commit()
+
+        new_id = cursor.lastrowid
+
+        pdf_path = ""
+
+        if files:
+            pdf_path = f"uploads/{author_id}/{new_id}"
+            os.makedirs(pdf_path, exist_ok=True)
+
+            for file in files:
+                filename = f"petition_{author_id}_{random.randint(1000000, 9999999)}_{file.filename}"
+                filelocation = f"{pdf_path}/{filename}"
+
+                with open(filelocation, "wb+") as file_object:
+                    shutil.copyfileobj(file.file, file_object)
+
+        update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
+        cursor.execute(update_query, (pdf_path, new_id))
+        connection.commit()
+
         return {"status": "success", "message": "Petition submitted successfully"}
     except Error as e:
         print(f"Error: {e}")

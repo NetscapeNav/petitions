@@ -66,7 +66,7 @@ function AddPetitionPage() {
                 <label htmlFor="text">Текст петиции</label>
                 <textarea id="text" placeholder="Напишите сюда..." name="text" required></textarea>
                 <label htmlFor="file">Файл PDF</label>
-                <input type="file" id="file" name="file"/>
+                <input type="file" id="file" name="files" multiple/>
                 <button className="PetitionSubmit" type="submit">Отправить</button>
             </form>
         </div>
