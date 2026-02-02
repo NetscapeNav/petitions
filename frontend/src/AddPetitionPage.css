@@ -38,6 +38,7 @@
     background-color: #C82D2D;
     color: white;
     border: none;
+    cursor: pointer;
 }
 
 @media (prefers-color-scheme: dark) {

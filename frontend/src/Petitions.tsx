@@ -2,7 +2,7 @@ import React, {useState, useEffect} from "react";
 /*import { Swiper, SwiperSlide } from 'swiper/react';
 import { EffectCards } from 'swiper/modules';*/
 import './Petitions.css';
-import {Link} from "react-router-dom";
+import {Link, useNavigate} from "react-router-dom";
 
 interface Petition {
     id: number;
@@ -14,6 +14,7 @@ interface Petition {
 }
 
 function Main() {
+    const navigate = useNavigate();
     const [petitions, setPetitions] = useState<Petition[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const storedId = localStorage.getItem("user_id");
@@ -35,10 +36,22 @@ function Main() {
     }, []);
 
     const handleRefuse = () => {
+        if (userId === "0") {
+            navigate(`/login`);
+            return;
+        }
         if (currentIndex + 1 < petitions.length) {
             setCurrentIndex(currentIndex + 1);
         } else {
             setCurrentIndex(0);
+        }
+    }
+
+    const handleActionCheck = (id: number) => {
+        if (userId === "0") {
+            navigate(`/login`);
+        } else {
+            navigate(`/petition/${id}`);
         }
     }
 
@@ -61,10 +74,10 @@ function Main() {
                             {petition.is_signed === 1 ? " (вы тоже!) " : " "}
                             уже подписались</p>
                         <div className="Buttons">
-                            <Link to={"/petition/" + petition.id}
+                            <span onClick={() => handleActionCheck(petition.id)}
                                   className={!petition.is_signed ? "PetitionsSign" : "PetitionWatch"}>
                                 {!petition.is_signed ? "Подписать" : "Посмотреть"}
-                            </Link>
+                            </span>
                             <button className="PetitionsRefuse" onClick={handleRefuse}>
                                 Не интересует
                             </button>

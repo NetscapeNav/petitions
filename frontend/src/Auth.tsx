@@ -42,11 +42,11 @@ function Auth() {
                     .then(data => {
                         console.log(data);
                         if (data.status === "success") {
-                            localStorage.setItem("user_id", data.user_id);
                             setUserId(data.user_id);
                             if (!data.is_verified && data.is_new) {
                                 setStep("email");
                             } else {
+                                localStorage.setItem("user_id", data.user_id);
                                 localStorage.removeItem('petition_prev');
                                 if (petition === "") {
                                     navigate("/");
@@ -125,6 +125,7 @@ function Auth() {
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
+                    localStorage.setItem("user_id", data.user_id);
                     localStorage.removeItem('petition_prev');
                     if (petition === "") {
                         navigate("/");
