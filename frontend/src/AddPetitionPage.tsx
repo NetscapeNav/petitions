@@ -17,6 +17,23 @@ function AddPetitionPage() {
     function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
         event.preventDefault();
 
+        const form = event.currentTarget;
+        const fileInput = form.elements.namedItem('files') as HTMLInputElement;
+
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            let totalSize = 0;
+            const MAX_SIZE_MB = 50;
+
+            for (let i = 0; i < fileInput.files.length; i++) {
+                totalSize += fileInput.files[i].size;
+            }
+
+            if (totalSize > MAX_SIZE_MB * 1024 * 1024) {
+                alert(`Общий размер файлов слишком большой! Максимум ${MAX_SIZE_MB} МБ.\nВы выбрали: ${(totalSize / (1024 * 1024)).toFixed(2)} МБ`);
+                return;
+            }
+        }
+
         if (userId === "0") return;
 
         const data = new FormData(event.currentTarget);
@@ -30,12 +47,18 @@ function AddPetitionPage() {
             .then(response => response.json())
             .then(result => {
                 if (result.status === "success") {
-                    alert("Спасибо за отправку! В ближайшее время мы рассмотрим ваше предложение и свяжемся с вами для дальнейшего сопровождения.");
+                    alert("Спасибо за отправку! В ближайшее время мы рассмотрим ваше предложение и свяжемся с вами для дальнейшего сопровождения");
                     navigate("/");
-                } else {
-                    alert("Ваша сессия истекла или пользователь удален. Пожалуйста, войдите снова.");
+                } else if (result.code === "USER_NOT_FOUND") {
+                    alert("Ваша сессия истекла или пользователь удален. Пожалуйста, войдите снова");
                     localStorage.removeItem("user_id");
                     navigate("/login");
+                    return;
+                } else if (result.code === "MAX_SIZE") {
+                    alert("Общий размер файлов не должен превышать 50 Мб");
+                    return;
+                } else {
+                    alert(result.message);
                     return;
                 }
             })

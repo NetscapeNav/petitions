@@ -112,7 +112,7 @@ def handle_submit_petition(
                 total_size += file_size
 
             if total_size > MAX_TOTAL_SIZE:
-                return {"status": "error",
+                return {"status": "error", "code": "MAX_SIZE",
                         "message": f"Общий размер файлов превышает {MAX_TOTAL_SIZE / (1024 * 1024)} МБ"}
 
         query = """
