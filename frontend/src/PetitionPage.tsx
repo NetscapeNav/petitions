@@ -19,10 +19,15 @@ function PetitionPage() {
     const userId = storedId ? storedId : "0";
 
     useEffect(() => {
-        console.log(userId);
+        if (userId === "0") {
+            localStorage.setItem("petition_prev", id ? id : "");
+            navigate("/login");
+        }
+
         fetch(`http://localhost:8000/api/petitions/${id}?user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
+                console.log(data);
                 if (!data.error) {
                     setPetition(data);
                 } else {

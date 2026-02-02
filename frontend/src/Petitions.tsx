@@ -36,10 +36,6 @@ function Main() {
     }, []);
 
     const handleRefuse = () => {
-        if (userId === "0") {
-            navigate(`/login`);
-            return;
-        }
         if (currentIndex + 1 < petitions.length) {
             setCurrentIndex(currentIndex + 1);
         } else {
