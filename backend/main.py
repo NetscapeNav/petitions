@@ -9,9 +9,12 @@ import mysql.connector
 from mysql.connector import Error
 from mysql.connector.aio import connect
 from starlette.middleware.cors import CORSMiddleware
+from email.mime.text import MIMEText
 import random
 import requests
+import smtplib
 
+import config
 import config
 from auth import user_telegram_verification
 from whitelist import whilelist
@@ -230,6 +233,80 @@ def sign_petition(petition_id: int, user_id: int):
         cursor.close()
         connection.close()
 
+
+def send_email(to_email, code):
+    try:
+        server = smtplib.SMTP_SSL(config.email_config['SMTP_SERVER'], config.email_config['SMTP_PORT'])
+        server.login(config.email_config['SMTP_USER'], config.email_config['SMTP_PASSWORD'])
+
+        subject = "Код подтверждения"
+        body = f"Код: {code}"
+
+        msg = MIMEText(body, "plain", "utf-8")
+        msg['Subject'] = subject
+        msg['From'] = config.email_config['SMTP_USER']
+        msg['To'] = to_email
+
+        server.sendmail(config.email_config['SMTP_USER'], to_email, msg.as_string())
+        server.quit()
+        return True
+    except Exception as e:
+        print(f"Ошибка отправки email: {e}")
+        return False
+
+
+@app.post('/api/verify/request')
+def request_verification(
+        user_id: int = Form(...),
+        email: str = Form(...)
+):
+    domain = email.split('@')[-1].lower()
+    if domain not in ["nsu.ru", "g.nsu.ru", "stud.nsu.ru"]:
+        return {"status": "error", "message": "Нужна почта @nsu.ru"}
+
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        new_code = str(random.randint(100000, 999999))
+
+        cursor.execute("UPDATE users SET email = %s, verification_code = %s WHERE id = %s", (email, new_code, user_id))
+        connection.commit()
+
+        if send_email(email, new_code):
+            return {"status": "success", "message": "Code sended"}
+        else:
+            return {"status": "error", "message": "Message delivery error"}
+    except Error as e:
+        return {"status": "error", "message": str(e)}
+    finally:
+        cursor.close()
+        connection.close()
+
+
+@app.post('/api/verify/confirm')
+def confirm_verification(
+        user_id: int = Form(...),
+        code: str = Form(...)
+):
+    connection = get_db_connection()
+    cursor = connection.cursor(dictionary=True)
+
+    try:
+        cursor.execute("SELECT verification_code FROM users WHERE id = %s", (user_id,))
+        user = cursor.fetchone()
+
+        if user and str(user['verification_code']) == str(code):
+            cursor.execute("UPDATE users SET is_verified = 1, region = 'NSU' WHERE id = %s", (user_id, ))
+            connection.commit()
+            return {"status": "success", "message": "Authorized"}
+        else:
+            return {"status": "error", "message": "Wrong code"}
+    finally:
+        cursor.close()
+        connection.close()
+
+
 @app.post('/api/login')
 def login(data: dict):
     connection = get_db_connection()
@@ -258,7 +335,12 @@ def login(data: dict):
         user = cursor.fetchone()
 
         if user:
-            return {"status": "success", "user_id": user['id'], "is_new": False}
+            return {
+                "status": "success",
+                "user_id": user['id'],
+                "is_new": False,
+                "is_verified": bool(user['is_verified'])
+            }
 
         ins_query = """
             INSERT INTO 
@@ -277,8 +359,10 @@ def login(data: dict):
         cursor.execute(ins_query, values)
         connection.commit()
         new_user_id = cursor.lastrowid
+        is_whitelisted = tg_id in whilelist
+        is_verified = 1 if is_whitelisted else 0
 
-        return {"status": "success", "user_id": new_user_id, "is_new": True}
+        return {"status": "success", "user_id": new_user_id, "is_new": True, "is_verified": is_verified}
     except Error as e:
         print(f"SQL Error: {e}")
         return {"status": "error", "message": str(e)}

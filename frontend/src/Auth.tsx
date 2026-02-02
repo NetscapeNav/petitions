@@ -1,6 +1,6 @@
 import {useState, useEffect} from "react";
 import './Auth.css'
-import {Link, useParams, useNavigate} from "react-router-dom";
+import {Link, useParams, useNavigate, Form} from "react-router-dom";
 
 interface TelegramUser {
     id: number;
@@ -19,9 +19,14 @@ function Auth() {
     let navigate = useNavigate();
     const petitionPrev = localStorage.getItem('petition_prev');
     const petition = petitionPrev ? petitionPrev : "";
-    const [id, setId] = useState(0);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [email, setEmail] = useState("");
+    const [code, setCode] = useState("");
+    const [step, setStep] = useState<'telegram' | 'email' | 'code'>('telegram');
 
     useEffect(() => {
+        if (step !== "telegram") return;
+
         window.onTelegramAuth = (user: TelegramUser) => {
             console.log("Телеграм вернул пользователя:", user);
 
@@ -38,13 +43,18 @@ function Auth() {
                         console.log(data);
                         if (data.status === "success") {
                             localStorage.setItem("user_id", data.user_id);
-                            localStorage.removeItem('petition_prev');
-                            if (petition === "") {
-                                navigate("/");
-                            } else if (petition === "add") {
-                                navigate("/add");
+                            setUserId(data.user_id);
+                            if (!data.is_verified) {
+                                setStep("email");
                             } else {
-                                navigate(`/petition/${petition}`);
+                                localStorage.removeItem('petition_prev');
+                                if (petition === "") {
+                                    navigate("/");
+                                } else if (petition === "add") {
+                                    navigate("/add");
+                                } else {
+                                    navigate(`/petition/${petition}`);
+                                }
                             }
                         } else {
                             alert("Ошибка входа: " + (data.error || data.message));
@@ -80,15 +90,99 @@ function Auth() {
             }
             delete window.onTelegramAuth;
         };
-    }, []);
+    }, [step]);
+
+    function handleEmail() {
+        const formData = new FormData();
+        formData.append("user_id", userId || "");
+        formData.append("email", email);
+
+        fetch("http://localhost:8000/api/verify/request", {
+            method: "POST",
+            body: formData
+        })
+            .then((res) => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    setStep("code");
+                } else {
+                    console.log("Ошибка отправки письма:" + data.message);
+                }
+            })
+            .catch(err => console.error(err));
+    }
+
+    function handleCode() {
+        const formData = new FormData();
+
+        formData.append("user_id", userId || "");
+        formData.append("code", code || "");
+
+        fetch("http://localhost:8000/api/verify/confirm", {
+            method: "POST",
+            body: formData
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "success") {
+                    localStorage.removeItem('petition_prev');
+                    if (petition === "") {
+                        navigate("/");
+                    } else if (petition === "add") {
+                        navigate("/add");
+                    } else {
+                        navigate(`/petition/${petition}`);
+                    }
+                } else {
+                    console.error("Ошибка:", data.message);
+                }
+            })
+            .catch(error => console.error(error));
+    }
 
     return (
-        <div className="AuthDiv">
-            <h1>Вход через Telegram</h1>
-            <p>Для подписания петиции необходимо подтвердить личность</p>
+        <>
+            {(step === "telegram") && (
+                <div className="AuthDiv">
+                    <h1>Вход через Telegram</h1>
+                    <p>Для подписания петиции необходимо подтвердить личность</p>
 
-            <div className="AuthContainer" id="telegram-login-container"></div>
-        </div>
+                    <div className="AuthContainer" id="telegram-login-container"></div>
+                </div>
+            )}
+
+            {(step === "email") && (
+                <div className="AuthDiv">
+                    <h1>Подтверждение через email</h1>
+                    <p>Для участия в локальных петициях нужно подтвердить вашу локацию</p>
+
+                    <div className="AuthContainer" id="email-container">
+                        <input name="email" type="email" value={email}
+                               onChange={(e) => setEmail(e.target.value)}/>
+                        <button onClick={handleEmail} type="submit">
+                            Отправить
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {(step === "code") && (
+                <div className="AuthDiv">
+                    <h1>Подтверждение через email</h1>
+                    <p>Для участия в локальных петициях нужно подтвердить вашу локацию</p>
+
+                    <p>Код отправлен на вашу электронную почту</p>
+
+                    <div className="AuthContainer" id="code-container">
+                        <input name="code" type="text" value={code}
+                               onChange={(e) => setCode(e.target.value)}/>
+                        <button onClick={handleCode} type="submit">
+                            Отправить
+                        </button>
+                    </div>
+                </div>
+            )}
+        </>
     );
 }
 
