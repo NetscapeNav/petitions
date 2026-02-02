@@ -92,7 +92,18 @@ function PetitionPage() {
             return;
         }
 
-        fetch(`http://localhost:8000/api/petitions/${id}/notify?user_id=${userId}`, {
+        let message = window.prompt("Напишите сообщение подписавшим петицию с информацией о сборе бумажных подписей", "");
+
+        if (message === null) {
+            message = "";
+        }
+
+        if (message.trim() === "") {
+            alert("Отправить пустое сообщение нельзя");
+            return;
+        }
+
+        fetch(`http://localhost:8000/api/petitions/${id}/notify?user_id=${userId}&message=${encodeURIComponent(message)}`, {
             method: "POST"
         })
             .then(response => response.json())

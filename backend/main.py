@@ -382,7 +382,7 @@ def send_telegram_message(tg_id:int, text: str):
     except Exception as e:
         print(f"Ошибка отправки пользователю {tg_id}: {e}")
 
-def telegram_author_call(petition_id: int):
+def telegram_author_call(petition_id: int, message: str):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Database connection failed"}
@@ -395,7 +395,9 @@ def telegram_author_call(petition_id: int):
         count = 0
         for row in tg_id_list:
             tg_id = row['tg_id']
-            send_telegram_message(tg_id, "По вашей одной из подписанных петиций намечается сбор бумажных подписей!")
+            send_telegram_message(tg_id, "По одной из подписанных вами петиций есть уведомление!\n\n" +
+                                         "Сообщение от автора: " + message + "\n\n" +
+                                         "Ссылка на петицию: http://127.0.0.1/petition/"+ str(petition_id))
             count += 1
 
         return {"status": "success", "message": f"Отправлено {count} уведомлений"}
@@ -408,7 +410,7 @@ def telegram_author_call(petition_id: int):
         connection.close()
 
 @app.post('/api/petitions/{petition_id}/notify')
-def petition_notify(petition_id: int, user_id: int):
+def petition_notify(petition_id: int, user_id: int, message: str):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Database connection failed"}
@@ -432,4 +434,4 @@ def petition_notify(petition_id: int, user_id: int):
         cursor.close()
         connection.close()
 
-    return telegram_author_call(petition_id)
+    return telegram_author_call(petition_id, message)
