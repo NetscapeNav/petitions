@@ -44,7 +44,7 @@ function Auth() {
                         if (data.status === "success") {
                             localStorage.setItem("user_id", data.user_id);
                             setUserId(data.user_id);
-                            if (!data.is_verified) {
+                            if (!data.is_verified && data.is_new) {
                                 setStep("email");
                             } else {
                                 localStorage.removeItem('petition_prev');
