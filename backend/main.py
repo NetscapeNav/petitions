@@ -115,13 +115,17 @@ def handle_submit_petition(
                 return {"status": "error", "code": "MAX_SIZE",
                         "message": f"Общий размер файлов превышает {MAX_TOTAL_SIZE / (1024 * 1024)} МБ"}
 
+        safe_header = html.escape(header)
+        safe_text = html.escape(text)
+        safe_location = html.escape(location)
+
         query = """
             INSERT INTO `petitions`
             (`author_id`, `title`, `content`, `status`, `pdf_url`, `location`, `time_created`) 
             VALUES 
             (%s, %s, %s, %s, %s, %s, NOW())
             """
-        values = (author_id, header, text, "draft", "pending" if files else "", location)
+        values = (author_id, safe_header, safe_text, "draft", "pending" if files else "", safe_location)
 
         cursor.execute(query, values)
         connection.commit()
