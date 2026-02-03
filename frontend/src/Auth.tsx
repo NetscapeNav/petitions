@@ -47,6 +47,7 @@ function Auth() {
                                 setStep("email");
                             } else {
                                 localStorage.setItem("user_id", data.user_id);
+                                localStorage.setItem("auth_token", data.token);
                                 localStorage.removeItem('petition_prev');
                                 if (petition === "") {
                                     navigate("/");
@@ -126,6 +127,7 @@ function Auth() {
                 if (data.status === "success") {
                     if (userId) {
                         localStorage.setItem("user_id", userId);
+                        localStorage.setItem("auth_token", data.token);
                     }
                     localStorage.removeItem('petition_prev');
                     if (petition === "") {

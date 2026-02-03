@@ -14,6 +14,7 @@ from email.mime.text import MIMEText
 import random
 import requests
 import smtplib
+import secrets
 
 import config
 from auth import user_telegram_verification
@@ -85,6 +86,7 @@ def handle_submit_petition(
     text: str = Form(...),
     location: str = Form(...),
     author_id: str = Form(...),
+    token: str = Form(...),
     files: List[UploadFile] = File(None)
 ):
     connection = get_db_connection()
@@ -93,7 +95,7 @@ def handle_submit_petition(
     cursor = connection.cursor(dictionary=True)
 
     try:
-        cursor.execute("SELECT id FROM users WHERE id = %s", (author_id,))
+        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (author_id, token))
         if not cursor.fetchone():
             cursor.close()
             connection.close()
@@ -191,13 +193,17 @@ def get_petition_id(user_id: int, petition_id : int):
         connection.close()
 
 @app.post('/api/sign')
-def sign_petition(petition_id: int, user_id: int):
+def sign_petition(petition_id: int, user_id: int, token: str):
     connection = get_db_connection()
     if connection is None:
         return {"error": "Database connection failed"}
     cursor = connection.cursor(dictionary=True)
 
     try:
+        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (user_id, token))
+        if not cursor.fetchone():
+            return {"status": "error", "message": "Ошибка авторизации"}
+
         cursor.execute("SELECT status, location FROM petitions WHERE petitions.id = %s", (petition_id, ))
         petition = cursor.fetchone()
         if not petition:
@@ -301,9 +307,10 @@ def confirm_verification(
         user = cursor.fetchone()
 
         if user and str(user['verification_code']) == str(code):
-            cursor.execute("UPDATE users SET is_verified = 1, region = 'NSU' WHERE id = %s", (user_id, ))
+            new_token = secrets.token_hex(16)
+            cursor.execute("UPDATE users SET is_verified = 1, region = 'NSU', token = %s WHERE id = %s", (new_token, user_id))
             connection.commit()
-            return {"status": "success", "message": "Authorized"}
+            return {"status": "success", "message": "Authorized", "token": new_token}
         else:
             return {"status": "error", "message": "Wrong code"}
     finally:
@@ -342,22 +349,25 @@ def login(data: dict):
             return {
                 "status": "success",
                 "user_id": user['id'],
+                "user_token": user['token'],
                 "is_verified": bool(user['is_verified'])
             }
 
+        new_token = secrets.token_hex(16)
         ins_query = """
             INSERT INTO 
             `users`
-            (`tg_id`, `is_verified`, `verification_code`, `exist_from`, `email`, `full_name`, `region`)
+            (`tg_id`, `is_verified`, `verification_code`, `exist_from`, `email`, `full_name`, `region`, `token`)
             VALUES
-            (%s, %s, %s, NOW(), %s, %s, %s)
+            (%s, %s, %s, NOW(), %s, %s, %s, %s)
         """
         values = (tg_id,
                   1 if tg_id in whilelist else 0,
                   str(random.randint(100000,999999)),
                   "",
                   full_name,
-                  whilelist[tg_id] if tg_id in whilelist else "")
+                  whilelist[tg_id] if tg_id in whilelist else "",
+                  new_token)
 
         cursor.execute(ins_query, values)
         connection.commit()
@@ -365,7 +375,8 @@ def login(data: dict):
         is_whitelisted = tg_id in whilelist
         is_verified = 1 if is_whitelisted else 0
 
-        return {"status": "success", "user_id": new_user_id, "is_verified": is_verified}
+        return {"status": "success", "user_id": new_user_id,
+                "user_token": new_token, "is_verified": is_verified}
     except Error as e:
         print(f"SQL Error: {e}")
         return {"status": "error", "message": str(e)}
@@ -415,13 +426,17 @@ def telegram_author_call(petition_id: int, message: str):
         connection.close()
 
 @app.post('/api/petitions/{petition_id}/notify')
-def petition_notify(petition_id: int, user_id: int, message: str):
+def petition_notify(petition_id: int, user_id: int, message: str, token: str):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Database connection failed"}
     cursor = connection.cursor(dictionary=True)
 
     try:
+        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (user_id, token))
+        if not cursor.fetchone():
+            return {"status": "error", "message": "Ошибка авторизации"}
+
         cursor.execute("""
             SELECT id FROM
             petitions

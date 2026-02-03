@@ -15,6 +15,7 @@ function PetitionPage() {
     let navigate = useNavigate();
     const {id}  = useParams();
     const [petition, setPetition] = useState<Petition|null>(null);
+    const token = localStorage.getItem("auth_token");
     const storedId = localStorage.getItem("user_id");
     const userId = storedId ? storedId : "0";
 
@@ -48,7 +49,7 @@ function PetitionPage() {
             return;
         }
 
-        fetch(`http://localhost:8000/api/sign?petition_id=${id}&user_id=${userId}`, {
+        fetch(`http://localhost:8000/api/sign?petition_id=${id}&user_id=${userId}&token=${token}`, {
             method: "POST",
         })
         .then(response => response.json())
@@ -103,7 +104,7 @@ function PetitionPage() {
             return;
         }
 
-        fetch(`http://localhost:8000/api/petitions/${id}/notify?user_id=${userId}&message=${encodeURIComponent(message)}`, {
+        fetch(`http://localhost:8000/api/petitions/${id}/notify?user_id=${userId}&token=${token}&message=${encodeURIComponent(message)}`, {
             method: "POST"
         })
             .then(response => response.json())

@@ -4,6 +4,7 @@ import {Link, useNavigate} from "react-router-dom";
 
 function AddPetitionPage() {
     const navigate = useNavigate();
+    const token = localStorage.getItem("auth_token");
     const storedId = localStorage.getItem("user_id");
     const userId = storedId ? storedId : "0";
 
@@ -39,6 +40,7 @@ function AddPetitionPage() {
         const data = new FormData(event.currentTarget);
 
         data.append("author_id", userId);
+        data.append("token", token || "");
 
         fetch("http://localhost:8000/api/petitions/submit", {
             method: "POST",
