@@ -128,7 +128,7 @@ function PetitionPage() {
                     <p className="signaturesCount">{petition.signatures_count} человек уже подписали</p>
                     <div className="ActionDivButtons">
                         <button onClick={handleSign} disabled={petition.is_signed === 1}
-                                className={!petition.is_signed ? "ButtonsSign" : "PetitionWatch"}>
+                                className={!petition.is_signed ? "ButtonsSign" : "ButtonsSigned"}>
                             {!petition.is_signed ? "Подписать" : "Подписано"}
                         </button>
                         {petition.is_signed === 1 && (

@@ -170,13 +170,13 @@ function Auth() {
             {(step === "code") && (
                 <div className="AuthDiv">
                     <h1>Подтверждение через email</h1>
-                    <p>Для участия в локальных петициях нужно подтвердить вашу локацию</p>
 
                     <p>Код отправлен на вашу электронную почту</p>
 
                     <div className="AuthContainer" id="code-container">
                         <input name="code" type="text" value={code}
-                               onChange={(e) => setCode(e.target.value)}/>
+                               onChange={(e) => setCode(e.target.value)}
+                                placeholder="Код"/>
                         <button onClick={handleCode} type="submit">
                             Отправить
                         </button>

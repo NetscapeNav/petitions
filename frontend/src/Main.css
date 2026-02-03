@@ -16,3 +16,12 @@
     cursor: pointer;
     text-decoration: none;
 }
+
+@media (max-width: 820px) {
+    .AddPetition {
+        margin: 0.5em 5% auto !important;
+        font-size: 1em !important;
+        padding: 10px 20px !important;
+        width: auto;
+    }
+}

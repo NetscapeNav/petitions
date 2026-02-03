@@ -7,10 +7,49 @@
 }
 
 .AuthDiv h1 {
+    text-align: center;
     font-size: 3.5em;
     margin: 0;
 }
 
 .AuthContainer {
     margin-top: 2em;
+    display: flex;
+    flex-direction: row;
+    gap: 1em;
+}
+
+.AuthContainer input {
+    font-family: Inter, sans-serif;
+    font-size: 1.2em;
+    padding: 0.25em;
+}
+
+.AuthContainer button {
+    font-size: 1.2em;
+    font-family: Inter, sans-serif;
+    font-weight: 800;
+    padding: 0.25em;
+    background-color: #C82D2D;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+@media (max-width: 820px) {
+    .AuthDiv h1 {
+        font-size: 2em;
+    }
+    .AuthDiv p {
+        text-align: center;
+        width: 90%;
+    }
+
+    .AuthContainer {
+        flex-direction: column;
+    }
+
+    .AuthContainer input {
+
+    }
 }

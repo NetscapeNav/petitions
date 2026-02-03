@@ -9,7 +9,7 @@
     background-color: #AFAFAF;
     width: 100%;
     transform: translateY(-60px) scale(0.92);
-    min-height: 20em;
+    min-height: 4em;
     box-shadow: 0px -4px 4px rgba(0, 0, 0, 0.25);
     z-index: 0;
     animation: slideIn 0.4s ease-out;
@@ -17,10 +17,10 @@
 
 .old-2 {
     position: absolute;
-    min-height: 20em;
     background-color: #BFBFBF;
     width: 100%;
     transform: translateY(-30px) scale(0.96);
+    min-height: 4em;
     box-shadow: 0px -4px 4px rgba(0, 0, 0, 0.25);
     z-index: 1;
     animation: slideIn 0.4s ease-out;
@@ -139,5 +139,44 @@
 
     .PetitionsRefuse {
         background-color: #742323;
+    }
+}
+
+@media (max-width: 820px) {
+    .old-1 {
+        transform: translateY(-30px) scale(0.92);
+    }
+
+    .old-2 {
+        transform: translateY(-15px) scale(0.96);
+    }
+
+    .PetitionsDiv {
+        width: 90%;
+        margin: 0.5em auto 0;
+    }
+
+    .Petition {
+        padding: 20px 18px;
+        min-height: 18em;
+    }
+
+    .PetitionsText {
+        max-height: 8em;
+        overflow-x: hidden;
+        overflow-y: scroll;
+        scrollbar-width: thin;
+        text-overflow: clip;
+    }
+
+    .Buttons {
+        gap: 0.5em;
+    }
+
+    .PetitionsSign, .PetitionsRefuse, .PetitionWatch {
+        margin: 0 !important;
+        font-size: 1em !important;
+        padding: 10px 15px !important;
+        width: auto;
     }
 }
