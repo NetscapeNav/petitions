@@ -18,7 +18,7 @@ function Main() {
     const [petitions, setPetitions] = useState<Petition[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const storedId = localStorage.getItem("user_id");
-    const userId = storedId ? storedId : "0";
+    const userId = (storedId && storedId !== "undefined") ? storedId : "0";
 
     useEffect(() => {
         fetch(`http://localhost:8000/api/petitions?user_id=${userId}`)
@@ -33,7 +33,7 @@ function Main() {
                 }
             })
             .catch(err => console.error(err));
-    }, []);
+    }, [userId]);
 
     const handleRefuse = () => {
         if (currentIndex + 1 < petitions.length) {

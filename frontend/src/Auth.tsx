@@ -106,7 +106,7 @@ function Auth() {
                 if (data.status === "success") {
                     setStep("code");
                 } else {
-                    console.log("Ошибка отправки письма:" + data.message);
+                    alert(data.message);
                 }
             })
             .catch(err => console.error(err));
@@ -125,7 +125,9 @@ function Auth() {
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
-                    localStorage.setItem("user_id", data.user_id);
+                    if (userId) {
+                        localStorage.setItem("user_id", userId);
+                    }
                     localStorage.removeItem('petition_prev');
                     if (petition === "") {
                         navigate("/");
@@ -135,7 +137,7 @@ function Auth() {
                         navigate(`/petition/${petition}`);
                     }
                 } else {
-                    console.error("Ошибка:", data.message);
+                    alert(data.message);
                 }
             })
             .catch(error => console.error(error));
