@@ -64,7 +64,6 @@ function Auth() {
             } catch (e) {
                 console.log("Error:", e);
             }
-            alert(`Привет, ${user.first_name}! Твой ID: ${user.id}`);
         }
 
         const script = document.createElement('script');
