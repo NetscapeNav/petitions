@@ -1,3 +1,4 @@
+import html
 import os
 import shutil
 from typing import Optional, List
@@ -14,7 +15,6 @@ import random
 import requests
 import smtplib
 
-import config
 import config
 from auth import user_telegram_verification
 from whitelist import whilelist
@@ -338,7 +338,6 @@ def login(data: dict):
             return {
                 "status": "success",
                 "user_id": user['id'],
-                "is_new": False,
                 "is_verified": bool(user['is_verified'])
             }
 
@@ -362,7 +361,7 @@ def login(data: dict):
         is_whitelisted = tg_id in whilelist
         is_verified = 1 if is_whitelisted else 0
 
-        return {"status": "success", "user_id": new_user_id, "is_new": True, "is_verified": is_verified}
+        return {"status": "success", "user_id": new_user_id, "is_verified": is_verified}
     except Error as e:
         print(f"SQL Error: {e}")
         return {"status": "error", "message": str(e)}
@@ -392,11 +391,13 @@ def telegram_author_call(petition_id: int, message: str):
         cursor.execute("SELECT users.tg_id FROM signatures JOIN users ON signatures.user_id = users.id WHERE petition_id = %s", (petition_id, ))
         tg_id_list = cursor.fetchall()
 
+        safe_message = html.escape(message)
+
         count = 0
         for row in tg_id_list:
             tg_id = row['tg_id']
             send_telegram_message(tg_id, "По одной из подписанных вами петиций есть уведомление!\n\n" +
-                                         "Сообщение от автора: " + message + "\n\n" +
+                                         "Сообщение от автора: " + safe_message + "\n\n" +
                                          "Ссылка на петицию: http://127.0.0.1/petition/"+ str(petition_id))
             count += 1
 

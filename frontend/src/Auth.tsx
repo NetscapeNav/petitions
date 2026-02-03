@@ -43,7 +43,7 @@ function Auth() {
                         console.log(data);
                         if (data.status === "success") {
                             setUserId(data.user_id);
-                            if (!data.is_verified && data.is_new) {
+                            if (!data.is_verified) {
                                 setStep("email");
                             } else {
                                 localStorage.setItem("user_id", data.user_id);
