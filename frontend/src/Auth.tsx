@@ -131,7 +131,7 @@ function Auth() {
                 if (data.status === "success") {
                     if (userId) {
                         localStorage.setItem("user_id", userId);
-                        localStorage.setItem("auth_token", data.token);
+                        localStorage.setItem("auth_token", data.user_token);
                     }
                     localStorage.removeItem('petition_prev');
                     if (petition === "") {

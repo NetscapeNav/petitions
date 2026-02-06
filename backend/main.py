@@ -24,14 +24,22 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://sepcode.ru", "https://127.0.0.1:80", "https://localhost:80"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
 os.makedirs("../uploads", exist_ok=True)
 
-app.mount("/uploads", StaticFiles(directory="../uploads"), name="uploads")
+
+class DownloadStaticFiles(StaticFiles):
+    async def get_response(self, path: str, scope):
+        response = await super().get_response(path, scope)
+        response.headers["Content-Disposition"] = "attachment" 
+        return response
+
+
+app.mount("/uploads", DownloadStaticFiles(directory="../uploads"), name="uploads")
 
 def get_db_connection():
     connection = None
@@ -137,12 +145,13 @@ def handle_submit_petition(
         pdf_path = ""
 
         if files:
-            pdf_path = f"../uploads/{author_id}/{new_id}"
+            pdf_path = f"/uploads/{author_id}/{new_id}"
             os.makedirs(pdf_path, exist_ok=True)
 
             for file in files:
-                filename = f"petition_{author_id}_{random.randint(1000000, 9999999)}_{file.filename}"
-                filelocation = f"{pdf_path}/{filename}"
+                safe_filename = os.path.basename(file.filename)
+                filename = f"petition_{author_id}_{random.randint(1000000, 9999999)}_{safe_filename}"
+                filelocation = f"../{pdf_path}/{filename}"
 
                 with open(filelocation, "wb+") as file_object:
                     shutil.copyfileobj(file.file, file_object)
@@ -154,7 +163,7 @@ def handle_submit_petition(
         return {"status": "success", "message": "Petition submitted successfully"}
     except Error as e:
         print(f"Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Unknown error. Try later"}
     finally:
         cursor.close()
         connection.close()
@@ -187,7 +196,7 @@ def get_petition_id(user_id: int, petition_id : int):
             return {"error": "No petition"}
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"error": str(e)}
+        return {"error": "Unknown error. Try later"}
     finally:
         cursor.close()
         connection.close()
@@ -238,7 +247,7 @@ def sign_petition(petition_id: int, user_id: int, token: str):
         print(f"SQL Error: {e}")
         if e.errno == 1062:
             return {"status": "error1062", "message": "Вы уже подписали эту петицию"}
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Unknown error. Try later"}
     finally:
         cursor.close()
         connection.close()
@@ -293,7 +302,7 @@ def request_verification(
         else:
             return {"status": "error", "message": "Message delivery error"}
     except Error as e:
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Unknown error. Try later"}
     finally:
         cursor.close()
         connection.close()
@@ -355,15 +364,20 @@ def login(data: dict):
         cursor.execute(chk_query, values)
         user = cursor.fetchone()
 
+        new_token = secrets.token_hex(16)
+
         if user:
+            upd_query = "UPDATE users SET token = %s WHERE id = %s"
+            cursor.execute(upd_query, (new_token, user['id']))
+            connection.commit()
+
             return {
                 "status": "success",
                 "user_id": user['id'],
-                "user_token": user['token'],
+                "user_token": new_token,
                 "is_verified": bool(user['is_verified'])
             }
 
-        new_token = secrets.token_hex(16)
         ins_query = """
             INSERT INTO 
             `users`
@@ -389,7 +403,7 @@ def login(data: dict):
                 "user_token": new_token, "is_verified": is_verified}
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Unknown error. Try later"}
     finally:
         cursor.close()
         connection.close()
@@ -430,7 +444,7 @@ def telegram_author_call(petition_id: int, message: str):
 
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Unknown error. Try later"}
     finally:
         cursor.close()
         connection.close()
@@ -459,7 +473,7 @@ def petition_notify(petition_id: int, user_id: int, message: str, token: str):
 
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"status": "error", "message": str(e)}
+        return {"status": "error", "message": "Unknown error. Try later"}
     finally:
         cursor.close()
         connection.close()
