@@ -1,6 +1,7 @@
 import "./AddPetitionPage.css"
 import {useState, useEffect} from "react";
 import {Link, useNavigate} from "react-router-dom";
+import { API_URL } from "./config";
 
 function AddPetitionPage() {
     const navigate = useNavigate();
@@ -42,7 +43,7 @@ function AddPetitionPage() {
         data.append("author_id", userId);
         data.append("token", token || "");
 
-        fetch("http://localhost:8000/api/petitions/submit", {
+        fetch(`http://${API_URL}:8000/api/petitions/submit`, {
             method: "POST",
             body: data,
         })

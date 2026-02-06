@@ -3,6 +3,7 @@ import React, {useState, useEffect} from "react";
 import { EffectCards } from 'swiper/modules';*/
 import './Petitions.css';
 import {Link, useNavigate} from "react-router-dom";
+import {API_URL} from "./config";
 
 interface Petition {
     id: number;
@@ -21,7 +22,7 @@ function Main() {
     const userId = (storedId && storedId !== "undefined") ? storedId : "0";
 
     useEffect(() => {
-        fetch(`http://localhost:8000/api/petitions?user_id=${userId}`)
+        fetch(`http://${API_URL}:8000/api/petitions?user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data);

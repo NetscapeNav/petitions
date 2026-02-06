@@ -1,6 +1,7 @@
 import {useState, useEffect} from "react";
 import './PetitionPage.css'
 import {Link, useParams, useNavigate} from "react-router-dom";
+import {API_URL} from "./config";
 
 interface Petition {
     id: number;
@@ -25,7 +26,7 @@ function PetitionPage() {
             navigate("/login");
         }
 
-        fetch(`http://localhost:8000/api/petitions/${id}?user_id=${userId}`)
+        fetch(`http://${API_URL}:8000/api/petitions/${id}?user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data);
@@ -49,7 +50,7 @@ function PetitionPage() {
             return;
         }
 
-        fetch(`http://localhost:8000/api/sign?petition_id=${id}&user_id=${userId}&token=${token}`, {
+        fetch(`http://${API_URL}:8000/api/sign?petition_id=${id}&user_id=${userId}&token=${token}`, {
             method: "POST",
         })
         .then(response => response.json())
@@ -104,7 +105,7 @@ function PetitionPage() {
             return;
         }
 
-        fetch(`http://localhost:8000/api/petitions/${id}/notify?user_id=${userId}&token=${token}&message=${encodeURIComponent(message)}`, {
+        fetch(`http://${API_URL}:8000/api/petitions/${id}/notify?user_id=${userId}&token=${token}&message=${encodeURIComponent(message)}`, {
             method: "POST"
         })
             .then(response => response.json())

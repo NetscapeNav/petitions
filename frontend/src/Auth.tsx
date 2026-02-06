@@ -1,6 +1,7 @@
 import {useState, useEffect} from "react";
 import './Auth.css'
 import {Link, useParams, useNavigate, Form} from "react-router-dom";
+import {API_URL} from "./config";
 
 interface TelegramUser {
     id: number;
@@ -32,7 +33,7 @@ function Auth() {
             console.log("Телеграм вернул пользователя:", user);
 
             try {
-                fetch("http://localhost:8000/api/login", {
+                fetch(`http://${API_URL}:8000/api/login`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
@@ -100,7 +101,7 @@ function Auth() {
         formData.append("email", email);
         formData.append("token", token || "");
 
-        fetch("http://localhost:8000/api/verify/request", {
+        fetch(`http://${API_URL}:8000/api/verify/request`, {
             method: "POST",
             body: formData
         })
@@ -122,7 +123,7 @@ function Auth() {
         formData.append("code", code || "");
         formData.append("token", token || "");
 
-        fetch("http://localhost:8000/api/verify/confirm", {
+        fetch(`http://${API_URL}:8000/api/verify/confirm`, {
             method: "POST",
             body: formData
         })
