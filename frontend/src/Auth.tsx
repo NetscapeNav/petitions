@@ -22,6 +22,7 @@ function Auth() {
     const [userId, setUserId] = useState<string | null>(null);
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
+    const [token, setToken] = useState("");
     const [step, setStep] = useState<'telegram' | 'email' | 'code'>('telegram');
 
     useEffect(() => {
@@ -43,11 +44,12 @@ function Auth() {
                         console.log(data);
                         if (data.status === "success") {
                             setUserId(data.user_id);
+                            setToken(data.user_token);
                             if (!data.is_verified) {
                                 setStep("email");
                             } else {
                                 localStorage.setItem("user_id", data.user_id);
-                                localStorage.setItem("auth_token", data.token);
+                                localStorage.setItem("auth_token", data.user_token);
                                 localStorage.removeItem('petition_prev');
                                 if (petition === "") {
                                     navigate("/");
@@ -96,6 +98,7 @@ function Auth() {
         const formData = new FormData();
         formData.append("user_id", userId || "");
         formData.append("email", email);
+        formData.append("token", token || "");
 
         fetch("http://localhost:8000/api/verify/request", {
             method: "POST",
@@ -117,6 +120,7 @@ function Auth() {
 
         formData.append("user_id", userId || "");
         formData.append("code", code || "");
+        formData.append("token", token || "");
 
         fetch("http://localhost:8000/api/verify/confirm", {
             method: "POST",

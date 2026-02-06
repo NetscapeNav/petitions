@@ -29,9 +29,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-os.makedirs("uploads", exist_ok=True)
+os.makedirs("../uploads", exist_ok=True)
 
-app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
+app.mount("/uploads", StaticFiles(directory="../uploads"), name="uploads")
 
 def get_db_connection():
     connection = None
@@ -137,7 +137,7 @@ def handle_submit_petition(
         pdf_path = ""
 
         if files:
-            pdf_path = f"uploads/{author_id}/{new_id}"
+            pdf_path = f"../uploads/{author_id}/{new_id}"
             os.makedirs(pdf_path, exist_ok=True)
 
             for file in files:
@@ -268,7 +268,8 @@ def send_email(to_email, code):
 @app.post('/api/verify/request')
 def request_verification(
         user_id: int = Form(...),
-        email: str = Form(...)
+        email: str = Form(...),
+        token: str = Form(...),
 ):
     domain = email.split('@')[-1].lower()
     if domain not in ["nsu.ru", "g.nsu.ru", "stud.nsu.ru"]:
@@ -278,6 +279,10 @@ def request_verification(
     cursor = connection.cursor(dictionary=True)
 
     try:
+        cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (token, user_id))
+        if not cursor.fetchone():
+            return {"status": "error", "message": "Auth error. Token is incorrect"}
+
         new_code = str(random.randint(100000, 999999))
 
         cursor.execute("UPDATE users SET email = %s, verification_code = %s WHERE id = %s", (email, new_code, user_id))
@@ -297,12 +302,17 @@ def request_verification(
 @app.post('/api/verify/confirm')
 def confirm_verification(
         user_id: int = Form(...),
-        code: str = Form(...)
+        code: str = Form(...),
+        token: str = Form(...)
 ):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
 
     try:
+        cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (token, user_id))
+        if not cursor.fetchone():
+            return {"status": "error", "message": "Auth error. Token is incorrect"}
+
         cursor.execute("SELECT verification_code FROM users WHERE id = %s", (user_id,))
         user = cursor.fetchone()
 
