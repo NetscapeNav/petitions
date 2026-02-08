@@ -6,7 +6,7 @@ function Header() {
     const [count, setCount] = useState(0);
 
     useEffect(() => {
-        fetch(`http://${API_URL}:8000/api/petitions/count`)
+        fetch(`${API_URL}:8000/api/petitions/count`)
             .then(response => response.json())
             .then(data => setCount(data))
             .catch(err => console.error(err))

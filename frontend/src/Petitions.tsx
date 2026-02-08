@@ -22,7 +22,7 @@ function Main() {
     const userId = (storedId && storedId !== "undefined") ? storedId : "0";
 
     useEffect(() => {
-        fetch(`http://${API_URL}:8000/api/petitions?user_id=${userId}`)
+        fetch(`${API_URL}:8000/api/petitions?user_id=${userId}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data);

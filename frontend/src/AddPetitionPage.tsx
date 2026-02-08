@@ -43,7 +43,7 @@ function AddPetitionPage() {
         data.append("author_id", userId);
         data.append("token", token || "");
 
-        fetch(`http://${API_URL}:8000/api/petitions/submit`, {
+        fetch(`${API_URL}:8000/api/petitions/submit`, {
             method: "POST",
             body: data,
         })
