@@ -33,7 +33,7 @@ function Auth() {
             console.log("Телеграм вернул пользователя:", user);
 
             try {
-                fetch(`${API_URL}:8000/api/login`, {
+                fetch(`${API_URL}/api/login`, {
                     method: "POST",
                     headers: {
                         'Content-Type': 'application/json'
@@ -101,7 +101,7 @@ function Auth() {
         formData.append("email", email);
         formData.append("token", token || "");
 
-        fetch(`${API_URL}:8000/api/verify/request`, {
+        fetch(`${API_URL}/api/verify/request`, {
             method: "POST",
             body: formData
         })
@@ -123,7 +123,7 @@ function Auth() {
         formData.append("code", code || "");
         formData.append("token", token || "");
 
-        fetch(`${API_URL}:8000/api/verify/confirm`, {
+        fetch(`${API_URL}/api/verify/confirm`, {
             method: "POST",
             body: formData
         })

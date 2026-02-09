@@ -2,13 +2,11 @@ import html
 import os
 import shutil
 from typing import Optional, List
-from xml.sax import parse
 
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Form, UploadFile, File
 import mysql.connector
 from mysql.connector import Error
-from mysql.connector.aio import connect
 from starlette.middleware.cors import CORSMiddleware
 from email.mime.text import MIMEText
 import random
@@ -24,7 +22,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "https://sepcode.ru", "https://127.0.0.1:80", "https://localhost:80"],
+    allow_origins=["https://petitions.sepcode.ru", "https://www.sepcode.ru", "https://sepcode.ru", "http://127.0.0.1:3000", "http://localhost:3000"],
     allow_methods=["*"],
     allow_headers=["*"],
 )
