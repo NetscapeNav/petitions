@@ -26,7 +26,7 @@ function PetitionPage() {
             navigate("/login");
         }
 
-        fetch(`${API_URL}/api/petitions/${id}?user_id=${userId}`)
+        fetch(`${API_URL}/api/petitions/${id}?user_id=${userId}&token=${token || ""}`)
             .then(response => response.json())
             .then(data => {
                 console.log(data);

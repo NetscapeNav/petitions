@@ -4,7 +4,7 @@ import shutil
 from typing import Optional, List
 
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Form, UploadFile, File
+from fastapi import FastAPI, Form, UploadFile, File, BackgroundTasks
 import mysql.connector
 from mysql.connector import Error
 from starlette.middleware.cors import CORSMiddleware
@@ -86,8 +86,32 @@ def petitions_count():
     connection.close()
     return data['total'] if data else 0
 
+def send_telegram_notify(text: str):
+    url = f"https://api.telegram.org/bot{config.TOKEN}/sendMessage"
+    payload = {
+        "chat_id": config.admin_id,
+        "text": text,
+        "parse_mode": "HTML"
+    }
+    try:
+        requests.post(url, json=payload)
+    except Exception as e:
+        print(f"Ошибка отправки уведомления администратору: {e}")
+
+def telegram_send_telegram_notify_call(petition_id: int, title: str):
+
+    safe_title = html.escape(title)
+
+    send_telegram_notify("Создана новая петиция!\n\n" +
+                                         "Название: " + safe_title + "\n\n" +
+                                         "Ссылка на петицию: https://petitions.sepcode.ru/petition/"+ str(petition_id))
+
+    return {"status": "success", "message": f"Отправлено!"}
+
+
 @app.post('/api/petitions/submit')
 def handle_submit_petition(
+    background_tasks: BackgroundTasks,
     header: str = Form(...),
     text: str = Form(...),
     location: str = Form(...),
@@ -143,13 +167,13 @@ def handle_submit_petition(
         pdf_path = ""
 
         if files:
-            pdf_path = f"/uploads/{author_id}/{new_id}"
+            pdf_path = f"../uploads/{author_id}/{new_id}"
             os.makedirs(pdf_path, exist_ok=True)
 
             for file in files:
                 safe_filename = os.path.basename(file.filename)
                 filename = f"petition_{author_id}_{random.randint(1000000, 9999999)}_{safe_filename}"
-                filelocation = f"../{pdf_path}/{filename}"
+                filelocation = f"{pdf_path}/{filename}"
 
                 with open(filelocation, "wb+") as file_object:
                     shutil.copyfileobj(file.file, file_object)
@@ -157,6 +181,8 @@ def handle_submit_petition(
         update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
         cursor.execute(update_query, (pdf_path, new_id))
         connection.commit()
+
+        background_tasks.add_task(telegram_send_telegram_notify_call, new_id, header)
 
         return {"status": "success", "message": "Petition submitted successfully"}
     except Error as e:
@@ -167,11 +193,22 @@ def handle_submit_petition(
         connection.close()
 
 @app.get('/api/petitions/{petition_id}')
-def get_petition_id(user_id: int, petition_id : int):
+def get_petition_id(user_id: int, petition_id : int, token: str = ""):
     connection = get_db_connection()
     if connection is None:
         return {"error": "No DB connection"}
     cursor = connection.cursor(dictionary=True)
+
+    is_admin = False
+    if token and user_id != 0:
+        try:
+            cursor.execute("SELECT tg_id FROM users WHERE id = %s AND token = %s", (user_id, token))
+            user = cursor.fetchone()
+            
+            if user and str(user['tg_id']) == str(config.admin_id):
+                is_admin = True
+        except Error as e:
+            print(f"Auth check error: {e}")
 
     query = """
     SELECT id, author_id, title as header, content as text, status,
@@ -188,7 +225,8 @@ def get_petition_id(user_id: int, petition_id : int):
         data = cursor.fetchone()
         if data:
             if data['status'] == "draft":
-                return {"error": "No petition"}
+                if not is_admin: 
+                     return {"error": "No petition"}
             return data
         else:
             return {"error": "No petition"}
@@ -435,7 +473,7 @@ def telegram_author_call(petition_id: int, message: str):
             tg_id = row['tg_id']
             send_telegram_message(tg_id, "По одной из подписанных вами петиций есть уведомление!\n\n" +
                                          "Сообщение от автора: " + safe_message + "\n\n" +
-                                         "Ссылка на петицию: http://127.0.0.1/petition/"+ str(petition_id))
+                                         "Ссылка на петицию: https://petitions.sepcode.ru/petition/"+ str(petition_id))
             count += 1
 
         return {"status": "success", "message": f"Отправлено {count} уведомлений"}

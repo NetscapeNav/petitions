@@ -9,6 +9,6 @@
 @media (max-width: 820px) {
     .Header {
         font-size: 1.3em;
-        margin: auto 5%;
+        margin: -5% 5% 0;
     }
 }
