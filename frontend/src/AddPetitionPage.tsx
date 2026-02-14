@@ -2,6 +2,7 @@ import "./AddPetitionPage.css"
 import {useState, useEffect} from "react";
 import {Link, useNavigate} from "react-router-dom";
 import { API_URL } from "./config";
+import { myAlert } from './myAlert';
 
 function AddPetitionPage() {
     const navigate = useNavigate();
@@ -31,7 +32,7 @@ function AddPetitionPage() {
             }
 
             if (totalSize > MAX_SIZE_MB * 1024 * 1024) {
-                alert(`Общий размер файлов слишком большой! Максимум ${MAX_SIZE_MB} МБ.\nВы выбрали: ${(totalSize / (1024 * 1024)).toFixed(2)} МБ`);
+                myAlert.error("Ошибка", `Общий размер файлов слишком большой! Максимум ${MAX_SIZE_MB} МБ.\nВы выбрали: ${(totalSize / (1024 * 1024)).toFixed(2)} МБ`);
                 return;
             }
         }
@@ -50,18 +51,18 @@ function AddPetitionPage() {
             .then(response => response.json())
             .then(result => {
                 if (result.status === "success") {
-                    alert("Спасибо за отправку! В ближайшее время мы рассмотрим ваше предложение и свяжемся с вами для дальнейшего сопровождения");
+                    myAlert.success("Успешно", "Спасибо за отправку! В ближайшее время мы рассмотрим ваше предложение и свяжемся с вами для дальнейшего сопровождения");
                     navigate("/");
                 } else if (result.code === "USER_NOT_FOUND") {
-                    alert("Ваша сессия истекла или пользователь удален. Пожалуйста, войдите снова");
+                    myAlert.error("Ошибка", "Ваша сессия истекла или пользователь удален. Пожалуйста, войдите снова");
                     localStorage.removeItem("user_id");
                     navigate("/login");
                     return;
                 } else if (result.code === "MAX_SIZE") {
-                    alert("Общий размер файлов не должен превышать 50 Мб");
+                    myAlert.error("Ошибка", "Общий размер файлов не должен превышать 50 Мб");
                     return;
                 } else {
-                    alert(result.message);
+                    myAlert.error("Ошибка", result.message);
                     return;
                 }
             })

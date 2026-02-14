@@ -2,6 +2,7 @@ import {useState, useEffect} from "react";
 import './Auth.css'
 import {Link, useParams, useNavigate, Form} from "react-router-dom";
 import {API_URL} from "./config";
+import { myAlert } from './myAlert';
 
 interface TelegramUser {
     id: number;
@@ -61,7 +62,7 @@ function Auth() {
                                 }
                             }
                         } else {
-                            alert("Ошибка входа: " + (data.error || data.message));
+                            myAlert.error("Ошибка входа", (data.error || data.message));
                         }
                     })
                     .catch(err => console.log(err));
@@ -110,7 +111,7 @@ function Auth() {
                 if (data.status === "success") {
                     setStep("code");
                 } else {
-                    alert(data.message);
+                    myAlert.error("Ошибка подтверждения email", data.message);
                 }
             })
             .catch(err => console.error(err));
@@ -143,7 +144,7 @@ function Auth() {
                         navigate(`/petition/${petition}`);
                     }
                 } else {
-                    alert(data.message);
+                    myAlert.error("Ошибка подтверждения email", data.message);
                 }
             })
             .catch(error => console.error(error));

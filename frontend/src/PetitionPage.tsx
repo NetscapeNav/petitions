@@ -2,6 +2,7 @@ import {useState, useEffect} from "react";
 import './PetitionPage.css'
 import {Link, useParams, useNavigate} from "react-router-dom";
 import {API_URL} from "./config";
+import { myAlert } from './myAlert';
 
 interface Petition {
     id: number;
@@ -35,7 +36,7 @@ function PetitionPage() {
                 } else {
                     console.error("Бэкенд вернул ошибку:", data.error);
                     if (data.error === "No petition") {
-                        alert("Петиция не существует");
+                        myAlert.error("Ошибка", "Петиция не существует");
                     }
                 }})
             .catch(error => console.log(error));
@@ -62,12 +63,12 @@ function PetitionPage() {
                     signatures_count: prev.signatures_count + 1,
                     is_signed: 1,
                 } : null);
-                alert("Спасибо за подписку!");
+                myAlert.success("Подписано!", "Спасибо за вашу поддержку! Вы можете поделиться петицией с друзьями, чтобы собрать ещё больше подписей");
             } else {
                 if (data.status === "error1062") {
-                    alert("Вы уже подписаны на эту петицию!");
+                    myAlert.error("Ошибка", "Вы уже подписаны на эту петицию!");
                 } else if (data.status === "errorloc") {
-                    alert("Петиция относится к другой местности!");
+                    myAlert.error("Ошибка", "Петиция относится к другой местности!");
                 }
             }
         })
@@ -79,7 +80,7 @@ function PetitionPage() {
 
         const url = window.location.href;
         navigator.clipboard.writeText(url)
-            .then(() => alert("Ссылка скопирована в буфер обмена!"))
+            .then(() => myAlert.success("Ссылка скопирована", "Ссылка скопирована в буфер обмена!"))
             .catch(err => console.error("Ошибка копирования:", err));
     }
 
@@ -89,19 +90,22 @@ function PetitionPage() {
         );
     }
 
-    function handleAlert() {
-        if (!window.confirm("Вы уверены? Это отправит уведомления всем подписавшимся в Telegram")) {
+    async function handleAlert() {
+        const confirmed = await myAlert.confirm(
+            "Подтверждение", 
+            "Вы уверены? Это отправит уведомления всем подписавшимся в Telegram", 
+            "Да, отправить"
+        );
+        if (!confirmed) {
             return;
         }
 
-        let message = window.prompt("Напишите сообщение подписавшим петицию с информацией о сборе бумажных подписей", "");
+        const message = await myAlert.textarea(
+            "Сообщение подписавшимся", 
+            "Напишите сообщение подписавшим петицию с информацией о сборе бумажных подписей"
+        );
 
-        if (message === null) {
-            message = "";
-        }
-
-        if (message.trim() === "") {
-            alert("Отправить пустое сообщение нельзя");
+        if (!message) {
             return;
         }
 
@@ -111,9 +115,9 @@ function PetitionPage() {
             .then(response => response.json())
             .then(data => {
                 if (data.status === "success") {
-                    alert(data.message);
+                    myAlert.success("Уведомления отправлены", data.message);
                 } else {
-                    alert("При отправке произошла ошибка");
+                    myAlert.error("Ошибка", "При отправке уведомлений произошла ошибка");
                 }
             })
             .catch(error => console.error(error));
