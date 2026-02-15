@@ -131,17 +131,41 @@ def handle_submit_petition(
             connection.close()
             return {"status": "error", "code": "USER_NOT_FOUND",
                     "message": "Пользователь не найден. Пожалуйста, войдите заново."}
+        
+        clean_author_id = ''.join(c for c in str(author_id) if c.isalnum())
+        if not clean_author_id or clean_author_id != str(author_id):
+            return {"status": "error", "message": "Некорректный ID пользователя"}
 
+        file_metadata = []
         if files:
             MAX_TOTAL_SIZE = 50 * 1024 * 1024
+            SAFE_EXTENSIONS = {'.pdf', '.txt', '.jpg', '.jpeg', '.png', '.gif'}
             total_size = 0
 
             for file in files:
+                if not file.filename:
+                    return {"status": "error", "message": "Обнаружен файл без имени"}
                 file.file.seek(0, 2)
                 file_size = file.file.tell()
                 file.file.seek(0)
 
                 total_size += file_size
+
+                original_ext = os.path.splitext(file.filename.lower())[1] if file.filename else ''
+                original_name = html.escape(file.filename)
+
+                if original_ext in SAFE_EXTENSIONS:
+                    secure_filename = f"safe_{secrets.token_hex(8)}{original_ext}"
+                else:
+                    secure_filename = f"data_{secrets.token_hex(8)}.dat"
+                
+                file_metadata.append({
+                    'original_name': original_name,
+                    'secure_filename': secure_filename,
+                    'file_size': file_size,
+                    'mime_type': file.content_type,
+                    'file_object': file
+                })
 
             if total_size > MAX_TOTAL_SIZE:
                 return {"status": "error", "code": "MAX_SIZE",
@@ -157,29 +181,39 @@ def handle_submit_petition(
             VALUES 
             (%s, %s, %s, %s, %s, %s, NOW())
             """
-        values = (author_id, safe_header, safe_text, "draft", "pending" if files else "", safe_location)
+        values = (clean_author_id, safe_header, safe_text, "draft", "pending" if files else "", safe_location)
 
         cursor.execute(query, values)
         connection.commit()
-
         new_id = cursor.lastrowid
 
-        pdf_path = ""
-
         if files:
-            pdf_path = f"../uploads/{author_id}/{new_id}"
+            clean_petition_id = ''.join(c for c in str(new_id) if c.isalnum())
+            pdf_path = f"../uploads/{clean_author_id}/{clean_petition_id}"
+            
+            real_path = os.path.realpath(pdf_path)
+            uploads_path = os.path.realpath("../uploads")
+            if not real_path.startswith(uploads_path):
+                return {"status": "error", "message": "Ошибка безопасности пути"}
+            
             os.makedirs(pdf_path, exist_ok=True)
 
-            for file in files:
-                safe_filename = os.path.basename(file.filename)
-                filename = f"petition_{author_id}_{random.randint(1000000, 9999999)}_{safe_filename}"
-                filelocation = f"{pdf_path}/{filename}"
+            files_info = []
+            for file_info in file_metadata:
+                filelocation = f"{pdf_path}/{file_info['secure_filename']}"
 
                 with open(filelocation, "wb+") as file_object:
-                    shutil.copyfileobj(file.file, file_object)
+                    shutil.copyfileobj(file_info['file_object'].file, file_object)
 
-        update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
-        cursor.execute(update_query, (pdf_path, new_id))
+                files_info.append(f"{file_info['secure_filename']}|{file_info['original_name']}|{file_info['file_size']}")
+
+            files_string = ";".join(files_info)
+            update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
+            cursor.execute(update_query, (f"{pdf_path}|{files_string}", new_id))
+        else:
+            update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
+            cursor.execute(update_query, ("", new_id))
+
         connection.commit()
 
         background_tasks.add_task(telegram_send_telegram_notify_call, new_id, header)
