@@ -6,7 +6,7 @@ import Header from "./Header";
 
 function Main() {
     return (
-        <>
+        <div className="MainContainer">
         <Header/>
         <div className="Main">
             <Petitions/>
@@ -14,7 +14,7 @@ function Main() {
                 Разместить свою петицию
             </Link>
         </div>
-        </>
+        </div>
     );
 }
 

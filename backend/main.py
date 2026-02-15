@@ -22,7 +22,7 @@ app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://petitions.sepcode.ru", "https://www.sepcode.ru", "https://sepcode.ru", "http://127.0.0.1:3000", "http://localhost:3000"],
+    allow_origins=["https://petitions.sepcode.ru", "https://www.sepcode.ru", "https://sepcode.ru"],
     allow_methods=["*"],
     allow_headers=["*"],
 )

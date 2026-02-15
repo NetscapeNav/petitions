@@ -67,7 +67,7 @@ function Main() {
                     <h3 className="PetitionsHeader">{petition.header}</h3>
                     <p className="PetitionsText">{petition.text}</p>
                     <div className="ButtonsAndNumber">
-                        <p>{petition.signatures_count} человек
+                        <p className="SignaturesCount">{petition.signatures_count} человек
                             {petition.is_signed === 1 ? " (вы тоже!) " : " "}
                             уже подписались</p>
                         <div className="Buttons">

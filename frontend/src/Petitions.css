@@ -71,6 +71,10 @@
     margin-top: auto;
 }
 
+.SignaturesCount {
+    margin: 0 0 0.3em;
+}
+
 .Buttons {
     display: flex;
     justify-content: space-between;

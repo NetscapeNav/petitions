@@ -1,8 +1,18 @@
 import Swal from 'sweetalert2';
 import './custom-swal.css';
 
-export const myAlert = {
-    success: (title, text = '') => {
+export interface MyAlertInterface {
+    success: (title: string, text?: string) => Promise<any>;
+    error: (title: string, text?: string) => Promise<any>;
+    warning: (title: string, text?: string) => Promise<any>;
+    info: (title: string, text?: string) => Promise<any>;
+    confirm: (title: string, text?: string, confirmText?: string) => Promise<boolean>;
+    input: (title: string, placeholder?: string) => Promise<string | null>;
+    textarea: (title: string, placeholder?: string) => Promise<string | null>;
+}
+
+export const myAlert: MyAlertInterface = {
+    success: (title: string, text: string = '') => {
         return Swal.fire({
             title,
             text,
@@ -11,25 +21,25 @@ export const myAlert = {
         });
     },
 
-    error: (title, text = '') => {
+    error: (title: string, text: string = '') => {
         return Swal.fire({
             title,
-            text, 
+            text,
             icon: 'error',
             confirmButtonText: 'OK'
         });
     },
 
-    warning: (title, text = '') => {
+    warning: (title: string, text: string = '') => {
         return Swal.fire({
             title,
             text,
-            icon: 'warning', 
+            icon: 'warning',
             confirmButtonText: 'OK'
         });
     },
 
-    info: (title, text = '') => {
+    info: (title: string, text: string = '') => {
         return Swal.fire({
             title,
             text,
@@ -38,7 +48,7 @@ export const myAlert = {
         });
     },
 
-    confirm: async (title, text = '', confirmText = 'Да') => {
+    confirm: async (title: string, text: string = '', confirmText: string = 'Да'): Promise<boolean> => {
         const result = await Swal.fire({
             title,
             text,
@@ -51,7 +61,7 @@ export const myAlert = {
         return result.isConfirmed;
     },
 
-    input: async (title, placeholder = '') => {
+    input: async (title: string, placeholder: string = ''): Promise<string | null> => {
         const result = await Swal.fire({
             title,
             input: 'text',
@@ -60,17 +70,18 @@ export const myAlert = {
             confirmButtonText: 'OK',
             cancelButtonText: 'Отмена',
             reverseButtons: true,
-            inputValidator: (value) => {
-                if (!value) {
+            inputValidator: (value: string) => {
+                if (!value || value.trim() === '') {
                     return 'Поле не может быть пустым!';
                 }
+                return null;
             }
         });
         
         return result.isConfirmed ? result.value : null;
     },
 
-    textarea: async (title, placeholder = '') => {
+    textarea: async (title: string, placeholder: string = ''): Promise<string | null> => {
         const result = await Swal.fire({
             title,
             input: 'textarea',
@@ -79,10 +90,11 @@ export const myAlert = {
             confirmButtonText: 'Отправить',
             cancelButtonText: 'Отмена',
             reverseButtons: true,
-            inputValidator: (value) => {
+            inputValidator: (value: string) => {
                 if (!value || value.trim() === '') {
                     return 'Сообщение не может быть пустым!';
                 }
+                return null;
             }
         });
         

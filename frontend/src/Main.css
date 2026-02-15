@@ -18,6 +18,10 @@
 }
 
 @media (max-width: 820px) {
+    .MainContainer {
+        position: relative;
+        top: -1.5em;
+    }
     .AddPetition {
         margin: 0.5em 5% auto !important;
         font-size: 1em !important;
