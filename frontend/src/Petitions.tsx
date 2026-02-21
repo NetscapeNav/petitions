@@ -1,6 +1,4 @@
 import React, {useState, useEffect} from "react";
-/*import { Swiper, SwiperSlide } from 'swiper/react';
-import { EffectCards } from 'swiper/modules';*/
 import './Petitions.css';
 import {Link, useNavigate} from "react-router-dom";
 import {API_URL} from "./config";
@@ -14,7 +12,16 @@ interface Petition {
     is_signed: number;
 }
 
-function Main() {
+function shuffleArray<T>(array: T[]): T[] {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+}
+
+function Petitions() {
     const navigate = useNavigate();
     const [petitions, setPetitions] = useState<Petition[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -28,9 +35,8 @@ function Main() {
         })
             .then(response => response.json())
             .then(data => {
-                console.log(data);
                 if (Array.isArray(data)) {
-                    setPetitions(data);
+                    setPetitions(shuffleArray(data));
                 } else {
                     console.error("Бэкенд вернул ошибку:", data.error);
                     setPetitions([]);
@@ -90,4 +96,4 @@ function Main() {
     ;
 }
 
-export default Main;
+export default Petitions;

@@ -33,7 +33,6 @@ function PetitionPage() {
         })
             .then(response => response.json())
             .then(data => {
-                console.log(data);
                 if (data.status !== "error") {
                     setPetition(data);
                 } else {
@@ -48,7 +47,7 @@ function PetitionPage() {
                         return;
                     }
                 }})
-            .catch(error => console.log(error));
+            .catch(error => console.error(error));
     }, [id, userId]);
 
     function handleSign(event: React.MouseEvent<HTMLButtonElement>) {
@@ -66,7 +65,6 @@ function PetitionPage() {
         })
         .then(response => response.json())
         .then(data => {
-            console.log(data);
             if (data.status === "success") {
                 setPetition(prev => prev ? {
                     ...prev,

@@ -31,8 +31,6 @@ function Auth() {
         if (step !== "telegram") return;
 
         window.onTelegramAuth = (user: TelegramUser) => {
-            console.log("Телеграм вернул пользователя:", user);
-
             try {
                 fetch(`${API_URL}/api/login`, {
                     method: "POST",
@@ -44,7 +42,6 @@ function Auth() {
                 })
                     .then((res) => res.json())
                     .then(data => {
-                        console.log(data);
                         if (data.status === "success") {
                             setUserId(data.user_id);
                             if (!data.is_verified) {
@@ -65,9 +62,9 @@ function Auth() {
                             myAlert.error("Ошибка входа", (data.error || data.message));
                         }
                     })
-                    .catch(err => console.log(err));
+                    .catch(err => console.error(err));
             } catch (e) {
-                console.log("Error:", e);
+                console.error("Error:", e);
             }
         }
 
@@ -85,7 +82,7 @@ function Auth() {
         if (container) {
             container.append(script);
         } else {
-            console.log("Ошибка загрузки виджета Telegram");
+            console.error("Ошибка загрузки виджета Telegram");
         }
 
         return () => {
