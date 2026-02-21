@@ -22,6 +22,7 @@ function Auth() {
     const petitionPrev = localStorage.getItem('petition_prev');
     const petition = petitionPrev ? petitionPrev : "";
     const [userId, setUserId] = useState<string | null>(null);
+    const [location, setLocation] = useState("");
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
     const [step, setStep] = useState<'telegram' | 'email' | 'code'>('telegram');
@@ -95,9 +96,15 @@ function Auth() {
     }, [step]);
 
     function handleEmail() {
+        if (!location) {
+            myAlert.error("Ошибка", "Выберите ваш регион");
+            return;
+        }
+
         const formData = new FormData();
         formData.append("user_id", userId || "");
         formData.append("email", email);
+        formData.append("location", location);
 
         fetch(`${API_URL}/api/verify/request`, {
             method: "POST",
@@ -164,6 +171,15 @@ function Auth() {
                     <p>Для участия в локальных петициях нужно подтвердить вашу локацию</p>
 
                     <div className="AuthContainer" id="email-container">
+                        <select name="location"
+                                onChange={(e) => setLocation(e.target.value)}
+                                required defaultValue="">
+                            <option value="" disabled>Выберите ваш регион</option>
+                            <option value="NSU">Новосибирск</option>
+                            <option value="IRK">Иркутск</option>
+                            <option value="SPB">Санкт-Петербург</option>
+                            <option value="other">Другое</option>
+                        </select>
                         <input name="email" type="email" value={email}
                                onChange={(e) => setEmail(e.target.value)}/>
                         <button onClick={handleEmail} type="submit">

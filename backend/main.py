@@ -315,7 +315,7 @@ def sign_petition(petition_id: int, user_id: int, auth_token: str = Cookie(defau
         user_region = user_region['region']
         location = petition['location']
 
-        if user_region != location:
+        if user_region != location and location != "Any":
             return {"status": "error", "code": "ERROR_LOCATION", "message": "Петицию можно подписать только если ваша локация совпадает с локацией петиции"}
 
         query = """
@@ -364,10 +364,15 @@ def send_email(to_email, code):
 def request_verification(
         user_id: int = Form(...),
         email: str = Form(...),
+        location: str = Form(...),
         auth_token: str = Cookie(default=None)
 ):
+    VALID_LOCATIONS = ["NSU", "IRNITU", "SPB", "other"]
+    if location not in VALID_LOCATIONS:
+        return {"status": "error", "message": "Некорректная локация"}
+    
     domain = email.split('@')[-1].lower()
-    if domain not in ["nsu.ru", "g.nsu.ru", "stud.nsu.ru"]:
+    if domain not in ["nsu.ru", "g.nsu.ru", "stud.nsu.ru"] and location == "NSU":
         return {"status": "error", "message": "Нужна почта @nsu.ru"}
 
     connection = get_db_connection()
@@ -380,7 +385,7 @@ def request_verification(
 
         new_code = str(random.randint(100000, 999999))
 
-        cursor.execute("UPDATE users SET email = %s, verification_code = %s WHERE id = %s", (email, new_code, user_id))
+        cursor.execute("UPDATE users SET email = %s, verification_code = %s, region = %s WHERE id = %s", (email, new_code, location, user_id))
         connection.commit()
 
         if send_email(email, new_code):
@@ -414,7 +419,7 @@ def confirm_verification(
 
         if user and str(user['verification_code']) == str(code):
             new_token = secrets.token_hex(16)
-            cursor.execute("UPDATE users SET is_verified = 1, region = 'NSU', token = %s WHERE id = %s", (new_token, user_id))
+            cursor.execute("UPDATE users SET is_verified = 1, token = %s WHERE id = %s", (new_token, user_id))
             connection.commit()
             responce.set_cookie(key="auth_token", value=new_token, httponly=True, secure=True, samesite='Lax', max_age=30*24*60*60)
             return {"status": "success", "message": "Authorized"}

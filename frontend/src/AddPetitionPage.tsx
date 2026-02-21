@@ -83,9 +83,9 @@ function AddPetitionPage() {
                 <select name="location" required defaultValue="">
                     <option value="" disabled>Выберите место проведения</option>
                     <option value="NSU">НГУ</option>
-                    <option value="IRNITU">ИрНИТУ</option>
+                    <option value="IRK">Иркутск</option>
                     <option value="SPB">Санкт-Петербург</option>
-                    <option value="other">Другое</option>
+                    <option value="Any">Любая</option>
                 </select>
                 <label htmlFor="header">Название петиции</label>
                 <input type="text" id="header" placeholder="Напишите сюда..." name="header" maxLength={200} required/>
