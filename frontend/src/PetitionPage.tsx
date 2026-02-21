@@ -92,9 +92,11 @@ function PetitionPage() {
     function handleShare(event: React.MouseEvent<HTMLButtonElement>) {
         event.preventDefault();
 
-        const url = window.location.href;
+        if (!petition) return;
+        const url = `https://petitions.sepcode.ru/api/share/${petition.id}`;
+
         navigator.clipboard.writeText(url)
-            .then(() => myAlert.success("Ссылка скопирована", "Ссылка скопирована в буфер обмена!"))
+            .then(() => myAlert.success("Ссылка скопирована", "Ссылка скопирована! Отправьте её друзьям."))
             .catch(err => console.error("Ошибка копирования:", err));
     }
 

@@ -5,6 +5,7 @@ from typing import Optional, List
 
 from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, Form, UploadFile, File, BackgroundTasks, Response, Cookie
+from fastapi.responses import HTMLResponse
 import mysql.connector
 from mysql.connector import Error
 from starlette.middleware.cors import CORSMiddleware
@@ -547,14 +548,8 @@ def telegram_author_call(petition_id: int, message: str):
                                          "Ссылка на петицию: https://petitions.sepcode.ru/petition/"+ str(petition_id))
             count += 1
 
-        return {"status": "success", "message": f"Отправлено {count} уведомлений"}
+    return {"status": "success", "message": f"Отправлено {count} уведомлений"}
 
-    except Error as e:
-        print(f"SQL Error: {e}")
-        return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
-    finally:
-        cursor.close()
-        connection.close()
 
 @app.post('/api/petitions/{petition_id}/notify')
 def petition_notify(
@@ -597,3 +592,48 @@ def petition_notify(
     background_tasks.add_task(telegram_author_call, petition_id, message)
     
     return {"status": "success", "message": "Рассылка запущена"}
+
+@app.get('/api/share/{petition_id}', response_class=HTMLResponse)
+def share_petition(petition_id: int):
+    connection = get_db_connection()
+    if connection is None:
+        return "<html><body>Ошибка подключения к базе данных</body></html>"
+
+    cursor = connection.cursor(dictionary=True)
+    try:
+        cursor.execute("SELECT title, content FROM petitions WHERE id = %s", (petition_id,))
+        petition = cursor.fetchone()
+
+        if not petition:
+            title = "Петиция не найдена"
+            description = "Такой петиции не существует или она была удалена."
+        else:
+            title = html.escape(petition['title'])
+            description = html.escape(petition['content'][:150]) + "..."
+
+        html_content = f"""
+        <!DOCTYPE html>
+        <html lang="ru">
+        <head>
+            <meta charset="UTF-8">
+            <title>{title}</title>
+            <meta property="og:type" content="article">
+            <meta property="og:title" content="{title}">
+            <meta property="og:description" content="{description}">
+            <meta property="og:site_name" content="Петиции">
+            <meta name="twitter:card" content="summary">
+            
+            <script>
+                window.location.href = "https://petitions.sepcode.ru/petition/{petition_id}";
+            </script>
+        </head>
+        <body>
+            <p>Перенаправляем на петицию...</p>
+            <a href="https://petitions.sepcode.ru/petition/{petition_id}">Нажмите сюда, если переход не произошел автоматически</a>
+        </body>
+        </html>
+        """
+        return html_content
+    finally:
+        cursor.close()
+        connection.close()
