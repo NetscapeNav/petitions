@@ -4,7 +4,7 @@ import shutil
 from typing import Optional, List
 
 from fastapi.staticfiles import StaticFiles
-from fastapi import FastAPI, Form, UploadFile, File, BackgroundTasks
+from fastapi import FastAPI, Form, UploadFile, File, BackgroundTasks, Response, Cookie
 import mysql.connector
 from mysql.connector import Error
 from starlette.middleware.cors import CORSMiddleware
@@ -23,6 +23,7 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["https://petitions.sepcode.ru", "https://www.sepcode.ru", "https://sepcode.ru"],
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -112,11 +113,11 @@ def telegram_send_telegram_notify_call(petition_id: int, title: str):
 @app.post('/api/petitions/submit')
 def handle_submit_petition(
     background_tasks: BackgroundTasks,
+    auth_token: str = Cookie(default=None),
     header: str = Form(...),
     text: str = Form(...),
     location: str = Form(...),
     author_id: str = Form(...),
-    token: str = Form(...),
     files: List[UploadFile] = File(None)
 ):
     connection = get_db_connection()
@@ -125,7 +126,7 @@ def handle_submit_petition(
     cursor = connection.cursor(dictionary=True)
 
     try:
-        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (author_id, token))
+        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (author_id, auth_token))
         if not cursor.fetchone():
             cursor.close()
             connection.close()
@@ -187,12 +188,6 @@ def handle_submit_petition(
             return {"status": "error", "message": "Некорректная локация."}
         safe_location = html.escape(location)
 
-        CHANGED_LOCATIONS = [("Новосибирск", "NSU"), ("Иркутск", "IRNITU"), ("Санкт-Петербург", "SPB"), ("Другое", "other")]
-        for old, new in CHANGED_LOCATIONS:
-            if safe_location == old:
-                safe_location = new
-                break
-
         query = """
             INSERT INTO `petitions`
             (`author_id`, `title`, `content`, `status`, `pdf_url`, `location`, `time_created`) 
@@ -225,7 +220,6 @@ def handle_submit_petition(
 
                 files_info.append(f"{file_info['secure_filename']}|{file_info['original_name']}|{file_info['file_size']}")
 
-            files_string = ";".join(files_info)
             update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
             cursor.execute(update_query, (f"{pdf_path}", new_id))
         else:
@@ -245,16 +239,20 @@ def handle_submit_petition(
         connection.close()
 
 @app.get('/api/petitions/{petition_id}')
-def get_petition_id(user_id: int, petition_id : int, token: str = ""):
+def get_petition_id(
+    user_id: int,
+    petition_id : int,
+    auth_token: str = Cookie(default=None)
+):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
 
     is_admin = False
-    if token and user_id != 0:
+    if auth_token and user_id != 0:
         try:
-            cursor.execute("SELECT tg_id FROM users WHERE id = %s AND token = %s", (user_id, token))
+            cursor.execute("SELECT tg_id FROM users WHERE id = %s AND token = %s", (user_id, auth_token))
             user = cursor.fetchone()
             
             if user and str(user['tg_id']) == str(config.admin_id):
@@ -290,14 +288,14 @@ def get_petition_id(user_id: int, petition_id : int, token: str = ""):
         connection.close()
 
 @app.post('/api/sign')
-def sign_petition(petition_id: int, user_id: int, token: str):
+def sign_petition(petition_id: int, user_id: int, auth_token: str = Cookie(default=None)):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
 
     try:
-        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (user_id, token))
+        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (user_id, auth_token))
         if not cursor.fetchone():
             return {"status": "error", "message": "Ошибка авторизации"}
 
@@ -366,7 +364,7 @@ def send_email(to_email, code):
 def request_verification(
         user_id: int = Form(...),
         email: str = Form(...),
-        token: str = Form(...),
+        auth_token: str = Cookie(default=None)
 ):
     domain = email.split('@')[-1].lower()
     if domain not in ["nsu.ru", "g.nsu.ru", "stud.nsu.ru"]:
@@ -376,7 +374,7 @@ def request_verification(
     cursor = connection.cursor(dictionary=True)
 
     try:
-        cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (token, user_id))
+        cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (auth_token, user_id))
         if not cursor.fetchone():
             return {"status": "error", "message": "Ошибка авторизации. Токен неверный"}
 
@@ -398,15 +396,16 @@ def request_verification(
 
 @app.post('/api/verify/confirm')
 def confirm_verification(
+        responce: Response,
         user_id: int = Form(...),
         code: str = Form(...),
-        token: str = Form(...)
+        auth_token: str = Cookie(default=None)
 ):
     connection = get_db_connection()
     cursor = connection.cursor(dictionary=True)
 
     try:
-        cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (token, user_id))
+        cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (auth_token, user_id))
         if not cursor.fetchone():
             return {"status": "error", "message": "Ошибка авторизации. Токен неверный"}
 
@@ -417,7 +416,8 @@ def confirm_verification(
             new_token = secrets.token_hex(16)
             cursor.execute("UPDATE users SET is_verified = 1, region = 'NSU', token = %s WHERE id = %s", (new_token, user_id))
             connection.commit()
-            return {"status": "success", "message": "Authorized", "token": new_token}
+            responce.set_cookie(key="auth_token", value=new_token, httponly=True, secure=True, samesite='Lax', max_age=30*24*60*60)
+            return {"status": "success", "message": "Authorized"}
         else:
             return {"status": "error", "message": "Неверный код подтверждения"}
     finally:
@@ -426,7 +426,7 @@ def confirm_verification(
 
 
 @app.post('/api/login')
-def login(data: dict):
+def login(data: dict, response: Response):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Ошибка подключения к базе данных"}
@@ -459,10 +459,11 @@ def login(data: dict):
             cursor.execute(upd_query, (new_token, user['id']))
             connection.commit()
 
+            response.set_cookie(key="auth_token", value=new_token, httponly=True, secure=True, samesite='Lax', max_age=30*24*60*60)
+
             return {
                 "status": "success",
                 "user_id": user['id'],
-                "user_token": new_token,
                 "is_verified": bool(user['is_verified'])
             }
 
@@ -487,8 +488,9 @@ def login(data: dict):
         is_whitelisted = tg_id in whilelist
         is_verified = 1 if is_whitelisted else 0
 
-        return {"status": "success", "user_id": new_user_id,
-                "user_token": new_token, "is_verified": is_verified}
+        response.set_cookie(key="auth_token", value=new_token, httponly=True, secure=True, samesite='Lax', max_age=30*24*60*60)
+
+        return {"status": "success", "user_id": new_user_id, "is_verified": is_verified}
     except Error as e:
         print(f"SQL Error: {e}")
         return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
@@ -546,7 +548,7 @@ def petition_notify(
     petition_id: int,
     user_id: int,
     message: str,
-    token: str
+    auth_token: str = Cookie(default=None)
 ):
     connection = get_db_connection()
     if connection is None:
@@ -554,7 +556,7 @@ def petition_notify(
     cursor = connection.cursor(dictionary=True)
 
     try:
-        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (user_id, token))
+        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (user_id, auth_token))
         if not cursor.fetchone():
             return {"status": "error", "message": "Ошибка авторизации"}
 

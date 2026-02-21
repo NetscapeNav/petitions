@@ -6,7 +6,6 @@ import { myAlert } from './myAlert';
 
 function AddPetitionPage() {
     const navigate = useNavigate();
-    const token = localStorage.getItem("auth_token");
     const storedId = localStorage.getItem("user_id");
     const userId = storedId ? storedId : "0";
 
@@ -42,10 +41,10 @@ function AddPetitionPage() {
         const data = new FormData(event.currentTarget);
 
         data.append("author_id", userId);
-        data.append("token", token || "");
 
         fetch(`${API_URL}/api/petitions/submit`, {
             method: "POST",
+            credentials: "include",
             body: data,
         })
             .then(response => response.json())

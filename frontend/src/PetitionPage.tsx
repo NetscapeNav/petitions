@@ -18,7 +18,6 @@ function PetitionPage() {
     let navigate = useNavigate();
     const {id}  = useParams();
     const [petition, setPetition] = useState<Petition|null>(null);
-    const token = localStorage.getItem("auth_token");
     const storedId = localStorage.getItem("user_id");
     const userId = storedId ? storedId : "0";
 
@@ -28,7 +27,10 @@ function PetitionPage() {
             navigate("/login");
         }
 
-        fetch(`${API_URL}/api/petitions/${id}?user_id=${userId}&token=${token || ""}`)
+        fetch(`${API_URL}/api/petitions/${id}?user_id=${userId}`, {
+            method: "GET",
+            credentials: "include",
+        })
             .then(response => response.json())
             .then(data => {
                 console.log(data);
@@ -42,7 +44,6 @@ function PetitionPage() {
                         return;
                     }
                     if (data.message === "Ошибка авторизации") {
-                        localStorage.removeItem("auth_token");
                         navigate("/login");
                         return;
                     }
@@ -59,8 +60,9 @@ function PetitionPage() {
             return;
         }
 
-        fetch(`${API_URL}/api/sign?petition_id=${id}&user_id=${userId}&token=${token}`, {
+        fetch(`${API_URL}/api/sign?petition_id=${id}&user_id=${userId}`, {
             method: "POST",
+            credentials: "include",
         })
         .then(response => response.json())
         .then(data => {
@@ -80,7 +82,6 @@ function PetitionPage() {
                 } else {
                     myAlert.error("Ошибка", "При подписании произошла ошибка");
                     if (data.message === "Ошибка авторизации") {
-                        localStorage.removeItem("auth_token");
                         navigate("/login");
                         return;
                     }
@@ -124,8 +125,9 @@ function PetitionPage() {
             return;
         }
 
-        fetch(`${API_URL}/api/petitions/${id}/notify?user_id=${userId}&token=${token}&message=${encodeURIComponent(message)}`, {
-            method: "POST"
+        fetch(`${API_URL}/api/petitions/${id}/notify?user_id=${userId}&message=${encodeURIComponent(message)}`, {
+            method: "POST",
+            credentials: "include",
         })
             .then(response => response.json())
             .then(data => {

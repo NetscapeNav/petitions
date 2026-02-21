@@ -24,7 +24,6 @@ function Auth() {
     const [userId, setUserId] = useState<string | null>(null);
     const [email, setEmail] = useState("");
     const [code, setCode] = useState("");
-    const [token, setToken] = useState("");
     const [step, setStep] = useState<'telegram' | 'email' | 'code'>('telegram');
 
     useEffect(() => {
@@ -39,6 +38,7 @@ function Auth() {
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: "include",
                     body: JSON.stringify(user),
                 })
                     .then((res) => res.json())
@@ -46,12 +46,10 @@ function Auth() {
                         console.log(data);
                         if (data.status === "success") {
                             setUserId(data.user_id);
-                            setToken(data.user_token);
                             if (!data.is_verified) {
                                 setStep("email");
                             } else {
                                 localStorage.setItem("user_id", data.user_id);
-                                localStorage.setItem("auth_token", data.user_token);
                                 localStorage.removeItem('petition_prev');
                                 if (petition === "") {
                                     navigate("/");
@@ -100,10 +98,10 @@ function Auth() {
         const formData = new FormData();
         formData.append("user_id", userId || "");
         formData.append("email", email);
-        formData.append("token", token || "");
 
         fetch(`${API_URL}/api/verify/request`, {
             method: "POST",
+            credentials: "include",
             body: formData
         })
             .then((res) => res.json())
@@ -122,10 +120,10 @@ function Auth() {
 
         formData.append("user_id", userId || "");
         formData.append("code", code || "");
-        formData.append("token", token || "");
 
         fetch(`${API_URL}/api/verify/confirm`, {
             method: "POST",
+            credentials: "include",
             body: formData
         })
             .then(res => res.json())
@@ -133,7 +131,6 @@ function Auth() {
                 if (data.status === "success") {
                     if (userId) {
                         localStorage.setItem("user_id", userId);
-                        localStorage.setItem("auth_token", data.user_token);
                     }
                     localStorage.removeItem('petition_prev');
                     if (petition === "") {
