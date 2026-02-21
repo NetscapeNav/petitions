@@ -8,6 +8,7 @@ interface Petition {
     id: number;
     author_id: number;
     header: string;
+    location: string;
     text: string;
     signatures_count: number;
     is_signed: number;
@@ -31,12 +32,19 @@ function PetitionPage() {
             .then(response => response.json())
             .then(data => {
                 console.log(data);
-                if (!data.error) {
+                if (data.status !== "error") {
                     setPetition(data);
                 } else {
                     console.error("Бэкенд вернул ошибку:", data.error);
-                    if (data.error === "No petition") {
+                    if (data.code === "NO_PETITION") {
                         myAlert.error("Ошибка", "Петиция не существует");
+                        navigate("/");
+                        return;
+                    }
+                    if (data.message === "Ошибка авторизации") {
+                        localStorage.removeItem("auth_token");
+                        navigate("/login");
+                        return;
                     }
                 }})
             .catch(error => console.log(error));
@@ -65,10 +73,17 @@ function PetitionPage() {
                 } : null);
                 myAlert.success("Подписано!", "Спасибо за вашу поддержку! Вы можете поделиться петицией с друзьями, чтобы собрать ещё больше подписей");
             } else {
-                if (data.status === "error1062") {
+                if (data.code === "ALREADY_SIGNED") {
                     myAlert.error("Ошибка", "Вы уже подписаны на эту петицию!");
-                } else if (data.status === "errorloc") {
+                } else if (data.code === "ERROR_LOCATION") {
                     myAlert.error("Ошибка", "Петиция относится к другой местности!");
+                } else {
+                    myAlert.error("Ошибка", "При подписании произошла ошибка");
+                    if (data.message === "Ошибка авторизации") {
+                        localStorage.removeItem("auth_token");
+                        navigate("/login");
+                        return;
+                    }
                 }
             }
         })
@@ -131,6 +146,7 @@ function PetitionPage() {
                 </Link>
                 <h1 className="PetitionInfoTitle">{petition.header}</h1>
                 <div className="ActionDiv">
+                    <p className="petitionLocation">Локация петиции: {petition.location}</p>
                     <p className="signaturesCount">{petition.signatures_count} человек уже подписали</p>
                     <div className="ActionDivButtons">
                         <button onClick={handleSign} disabled={petition.is_signed === 1}

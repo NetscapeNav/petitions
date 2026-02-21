@@ -52,7 +52,7 @@ def get_db_connection():
 def read_petitions(user_id: int):
     connection = get_db_connection()
     if connection is None:
-        return {"error": "Database connection failed"}
+        return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
     query = """
         SELECT 
@@ -78,7 +78,7 @@ def read_petitions(user_id: int):
 def petitions_count():
     connection = get_db_connection()
     if connection is None:
-        return 0
+        return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
     cursor.execute("SELECT COUNT(*) as total FROM `petitions` WHERE status ='ongoing'")
     data = cursor.fetchone()
@@ -121,7 +121,7 @@ def handle_submit_petition(
 ):
     connection = get_db_connection()
     if connection is None:
-        return {"error": "Database connection failed"}
+        return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
 
     try:
@@ -137,43 +137,61 @@ def handle_submit_petition(
             return {"status": "error", "message": "Некорректный ID пользователя"}
 
         file_metadata = []
+        print(f"Received {len(files) if files else 0} files for petition submission by user {author_id}")
+        print(files)
         if files:
-            MAX_TOTAL_SIZE = 50 * 1024 * 1024
-            SAFE_EXTENSIONS = {'.pdf', '.txt', '.jpg', '.jpeg', '.png', '.gif'}
-            total_size = 0
+            valid_files = [file for file in (files or []) if file.filename]
+            
+            if valid_files:
 
-            for file in files:
-                if not file.filename:
-                    return {"status": "error", "message": "Обнаружен файл без имени"}
-                file.file.seek(0, 2)
-                file_size = file.file.tell()
-                file.file.seek(0)
+                MAX_TOTAL_SIZE = 50 * 1024 * 1024
+                SAFE_EXTENSIONS = {'.pdf', '.txt', '.jpg', '.jpeg', '.png', '.gif'}
+                total_size = 0
 
-                total_size += file_size
+                for file in files:
+                    if not file.filename:
+                        return {"status": "error", "message": "Обнаружен файл без имени"}
+                    file.file.seek(0, 2)
+                    file_size = file.file.tell()
+                    file.file.seek(0)
 
-                original_ext = os.path.splitext(file.filename.lower())[1] if file.filename else ''
-                original_name = html.escape(file.filename)
+                    total_size += file_size
 
-                if original_ext in SAFE_EXTENSIONS:
-                    secure_filename = f"safe_{secrets.token_hex(8)}{original_ext}"
-                else:
-                    secure_filename = f"data_{secrets.token_hex(8)}.dat"
-                
-                file_metadata.append({
-                    'original_name': original_name,
-                    'secure_filename': secure_filename,
-                    'file_size': file_size,
-                    'mime_type': file.content_type,
-                    'file_object': file
-                })
+                    original_ext = os.path.splitext(file.filename.lower())[1] if file.filename else ''
+                    original_name = html.escape(file.filename)
 
-            if total_size > MAX_TOTAL_SIZE:
-                return {"status": "error", "code": "MAX_SIZE",
-                        "message": f"Общий размер файлов превышает {MAX_TOTAL_SIZE / (1024 * 1024)} МБ"}
+                    if original_ext in SAFE_EXTENSIONS:
+                        secure_filename = f"safe_{secrets.token_hex(8)}{original_ext}"
+                    else:
+                        secure_filename = f"data_{secrets.token_hex(8)}.dat"
+                    
+                    file_metadata.append({
+                        'original_name': original_name,
+                        'secure_filename': secure_filename,
+                        'file_size': file_size,
+                        'mime_type': file.content_type,
+                        'file_object': file
+                    })
+
+                if total_size > MAX_TOTAL_SIZE:
+                    return {"status": "error", "code": "MAX_SIZE",
+                            "message": f"Общий размер файлов превышает {MAX_TOTAL_SIZE / (1024 * 1024)} МБ"}
 
         safe_header = html.escape(header)
         safe_text = html.escape(text)
+        if len(safe_header) > 200 or len(safe_text) > 1000000:
+            return {"status": "error", "message": "Превышено максимальное количество символов для заголовка или текста"}
+
+        VALID_LOCATIONS = ["NSU", "IRNITU", "SPB", "other"]
+        if location not in VALID_LOCATIONS:
+            return {"status": "error", "message": "Некорректная локация."}
         safe_location = html.escape(location)
+
+        CHANGED_LOCATIONS = [("Новосибирск", "NSU"), ("Иркутск", "IRNITU"), ("Санкт-Петербург", "SPB"), ("Другое", "other")]
+        for old, new in CHANGED_LOCATIONS:
+            if safe_location == old:
+                safe_location = new
+                break
 
         query = """
             INSERT INTO `petitions`
@@ -181,13 +199,13 @@ def handle_submit_petition(
             VALUES 
             (%s, %s, %s, %s, %s, %s, NOW())
             """
-        values = (clean_author_id, safe_header, safe_text, "draft", "pending" if files else "", safe_location)
+        values = (clean_author_id, safe_header, safe_text, "ongoing", "pending" if files else "", safe_location)
 
         cursor.execute(query, values)
         connection.commit()
         new_id = cursor.lastrowid
 
-        if files:
+        if valid_files:
             clean_petition_id = ''.join(c for c in str(new_id) if c.isalnum())
             pdf_path = f"../uploads/{clean_author_id}/{clean_petition_id}"
             
@@ -209,7 +227,7 @@ def handle_submit_petition(
 
             files_string = ";".join(files_info)
             update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
-            cursor.execute(update_query, (f"{pdf_path}|{files_string}", new_id))
+            cursor.execute(update_query, (f"{pdf_path}", new_id))
         else:
             update_query = "UPDATE petitions SET pdf_url = %s WHERE id = %s"
             cursor.execute(update_query, ("", new_id))
@@ -230,7 +248,7 @@ def handle_submit_petition(
 def get_petition_id(user_id: int, petition_id : int, token: str = ""):
     connection = get_db_connection()
     if connection is None:
-        return {"error": "No DB connection"}
+        return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
 
     is_admin = False
@@ -245,7 +263,7 @@ def get_petition_id(user_id: int, petition_id : int, token: str = ""):
             print(f"Auth check error: {e}")
 
     query = """
-    SELECT id, author_id, title as header, content as text, status,
+    SELECT id, author_id, title as header, location, content as text, status,
     EXISTS(
         SELECT 1 FROM signatures 
         WHERE signatures.petition_id = petitions.id AND signatures.user_id = %s
@@ -260,13 +278,13 @@ def get_petition_id(user_id: int, petition_id : int, token: str = ""):
         if data:
             if data['status'] == "draft":
                 if not is_admin: 
-                     return {"error": "No petition"}
+                     return {"status": "error", "message": "Нет такой петиции", "code": "NO_PETITION"}
             return data
         else:
-            return {"error": "No petition"}
+            return {"status": "error", "message": "Нет такой петиции", "code": "NO_PETITION"}
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"error": "Unknown error. Try later"}
+        return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
     finally:
         cursor.close()
         connection.close()
@@ -275,7 +293,7 @@ def get_petition_id(user_id: int, petition_id : int, token: str = ""):
 def sign_petition(petition_id: int, user_id: int, token: str):
     connection = get_db_connection()
     if connection is None:
-        return {"error": "Database connection failed"}
+        return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
 
     try:
@@ -286,21 +304,21 @@ def sign_petition(petition_id: int, user_id: int, token: str):
         cursor.execute("SELECT status, location FROM petitions WHERE petitions.id = %s", (petition_id, ))
         petition = cursor.fetchone()
         if not petition:
-            return {"status": "error", "message": "No petition"}
+            return {"status": "error", "message": "Нет такой петиции", "code": "NO_PETITION"}
 
         cursor.execute("SELECT region FROM users WHERE users.id = %s", (user_id, ))
         user_region = cursor.fetchone()
         if not user_region:
-            return {"status": "error", "message": "No user"}
+            return {"status": "error", "message": "Нет пользователя"}
 
         if petition['status'] == "draft":
-            return {"status": "error", "message": "No petition"}
+            return {"status": "error", "message": "Нет такой петиции", "code": "NO_PETITION"}
 
         user_region = user_region['region']
         location = petition['location']
 
         if user_region != location:
-            return {"status": "errorloc", "message": "Different locations"}
+            return {"status": "error", "code": "ERROR_LOCATION", "message": "Петицию можно подписать только если ваша локация совпадает с локацией петиции"}
 
         query = """
             INSERT INTO
@@ -312,12 +330,12 @@ def sign_petition(petition_id: int, user_id: int, token: str):
         values = (user_id, petition_id, "", "digital")
         cursor.execute(query, values)
         connection.commit()
-        return {"status": "success", "message": "Petition signed successfully"}
+        return {"status": "success", "message": "Петиция подписана успешно"}
     except Error as e:
         print(f"SQL Error: {e}")
         if e.errno == 1062:
-            return {"status": "error1062", "message": "Вы уже подписали эту петицию"}
-        return {"status": "error", "message": "Unknown error. Try later"}
+            return {"status": "error", "code": "ALREADY_SIGNED", "message": "Вы уже подписали эту петицию"}
+        return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
     finally:
         cursor.close()
         connection.close()
@@ -360,7 +378,7 @@ def request_verification(
     try:
         cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (token, user_id))
         if not cursor.fetchone():
-            return {"status": "error", "message": "Auth error. Token is incorrect"}
+            return {"status": "error", "message": "Ошибка авторизации. Токен неверный"}
 
         new_code = str(random.randint(100000, 999999))
 
@@ -368,11 +386,11 @@ def request_verification(
         connection.commit()
 
         if send_email(email, new_code):
-            return {"status": "success", "message": "Code sended"}
+            return {"status": "success", "message": "Код отправлен на почту"}
         else:
-            return {"status": "error", "message": "Message delivery error"}
+            return {"status": "error", "message": "Ошибка отправки кода. Проверьте почтовый адрес или попробуйте позже"}
     except Error as e:
-        return {"status": "error", "message": "Unknown error. Try later"}
+        return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
     finally:
         cursor.close()
         connection.close()
@@ -390,7 +408,7 @@ def confirm_verification(
     try:
         cursor.execute("SELECT * FROM users WHERE token = %s AND id = %s", (token, user_id))
         if not cursor.fetchone():
-            return {"status": "error", "message": "Auth error. Token is incorrect"}
+            return {"status": "error", "message": "Ошибка авторизации. Токен неверный"}
 
         cursor.execute("SELECT verification_code FROM users WHERE id = %s", (user_id,))
         user = cursor.fetchone()
@@ -401,7 +419,7 @@ def confirm_verification(
             connection.commit()
             return {"status": "success", "message": "Authorized", "token": new_token}
         else:
-            return {"status": "error", "message": "Wrong code"}
+            return {"status": "error", "message": "Неверный код подтверждения"}
     finally:
         cursor.close()
         connection.close()
@@ -411,13 +429,13 @@ def confirm_verification(
 def login(data: dict):
     connection = get_db_connection()
     if connection is None:
-        return {"status": "error", "message": "Database connection failed"}
+        return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
     try:
         is_valid = user_telegram_verification(data, config.TOKEN)
 
         if not is_valid:
-            return {"error": "Неавторизованный запрос"}
+            return {"status": "error", "message": "Неавторизованный запрос"}
 
         tg_id = data['id']
         first_name = data.get('first_name', '')
@@ -473,7 +491,7 @@ def login(data: dict):
                 "user_token": new_token, "is_verified": is_verified}
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"status": "error", "message": "Unknown error. Try later"}
+        return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
     finally:
         cursor.close()
         connection.close()
@@ -486,14 +504,17 @@ def send_telegram_message(tg_id:int, text: str):
         "parse_mode": "HTML"
     }
     try:
-        requests.post(url, json=payload)
+        responce = requests.post(url, json=payload)
+        responce_data = responce.json()
+        if not responce_data.get("ok"):
+            print(f"Ошибка отправки сообщения пользователю {tg_id}: {responce_data.get('description')}")
     except Exception as e:
         print(f"Ошибка отправки пользователю {tg_id}: {e}")
 
 def telegram_author_call(petition_id: int, message: str):
     connection = get_db_connection()
     if connection is None:
-        return {"status": "error", "message": "Database connection failed"}
+        return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
 
     try:
@@ -514,13 +535,19 @@ def telegram_author_call(petition_id: int, message: str):
 
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"status": "error", "message": "Unknown error. Try later"}
+        return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
     finally:
         cursor.close()
         connection.close()
 
 @app.post('/api/petitions/{petition_id}/notify')
-def petition_notify(petition_id: int, user_id: int, message: str, token: str):
+def petition_notify(
+    background_tasks: BackgroundTasks,
+    petition_id: int,
+    user_id: int,
+    message: str,
+    token: str
+):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Database connection failed"}
@@ -539,13 +566,18 @@ def petition_notify(petition_id: int, user_id: int, message: str, token: str):
         data = cursor.fetchone()
 
         if not data:
-            return {"status": "error", "message": "Not an author"}
+            return {"status": "error", "message": "Вы не являетесь автором этой петиции"}
+
+        if len(message) > 3500:
+            return {"status": "error", "message": "Сообщение слишком длинное"}
 
     except Error as e:
         print(f"SQL Error: {e}")
-        return {"status": "error", "message": "Unknown error. Try later"}
+        return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
     finally:
         cursor.close()
         connection.close()
 
-    return telegram_author_call(petition_id, message)
+    background_tasks.add_task(telegram_author_call, petition_id, message)
+    
+    return {"status": "success", "message": "Рассылка запущена"}

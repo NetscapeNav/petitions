@@ -89,9 +89,9 @@ function AddPetitionPage() {
                     <option value="other">Другое</option>
                 </select>
                 <label htmlFor="header">Название петиции</label>
-                <input type="text" id="header" placeholder="Напишите сюда..." name="header" required/>
+                <input type="text" id="header" placeholder="Напишите сюда..." name="header" maxLength={200} required/>
                 <label htmlFor="text">Текст петиции</label>
-                <textarea id="text" placeholder="Напишите сюда..." name="text" required></textarea>
+                <textarea id="text" placeholder="Напишите сюда..." name="text" maxLength={1000000} required></textarea>
                 <label htmlFor="file">Файл PDF</label>
                 <input type="file" id="file" name="files" multiple/>
                 <button className="PetitionSubmit" type="submit">Отправить</button>

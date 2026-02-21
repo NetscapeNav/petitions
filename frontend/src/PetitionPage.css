@@ -33,7 +33,7 @@
     gap: 10px;
 }
 
-.signaturesCount {
+.signaturesCount, .petitionLocation {
     font-size: 1em;
     margin: 0;
 }
@@ -106,7 +106,7 @@
 .Text {
     padding: 0 10% 5%;
     overflow-x: hidden;
-    overflow-y: scroll;
+    white-space: pre-wrap;
     text-overflow: clip;
 }
 
