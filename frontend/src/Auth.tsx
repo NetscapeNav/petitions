@@ -51,6 +51,7 @@ function Auth() {
                                 setStep("email");
                             } else {
                                 localStorage.setItem("user_id", data.user_id);
+                                if (data.region) localStorage.setItem("user_region", data.region);
                                 localStorage.removeItem('petition_prev');
                                 if (petition === "") {
                                     navigate("/");
@@ -139,6 +140,7 @@ function Auth() {
                     if (userId) {
                         localStorage.setItem("user_id", userId);
                     }
+                    localStorage.setItem("user_region", location);
                     localStorage.removeItem('petition_prev');
                     if (petition === "") {
                         navigate("/");

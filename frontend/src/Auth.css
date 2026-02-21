@@ -19,10 +19,13 @@
     gap: 1em;
 }
 
-.AuthContainer input {
+.AuthContainer input, select {
     font-family: Inter, sans-serif;
     font-size: 1.2em;
     padding: 0.25em;
+    background-color: #000;
+    border: 1px solid #fff;
+    color: #fff;
 }
 
 .AuthContainer button {

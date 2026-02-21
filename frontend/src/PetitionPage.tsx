@@ -148,7 +148,13 @@ function PetitionPage() {
                 </Link>
                 <h1 className="PetitionInfoTitle">{petition.header}</h1>
                 <div className="ActionDiv">
-                    <p className="petitionLocation">Локация петиции: {petition.location}</p>
+                    <p className="petitionLocation">Локация петиции: {
+                        petition.location === "NSU" ? "НГУ" :
+                            petition.location === "IRK" ? "Иркутск" :
+                                petition.location === "SPB" ? "Санкт-Петербург" :
+                                    petition.location === "Any" ? "Любая" :
+                                        petition.location
+                    }</p>
                     <p className="signaturesCount">{petition.signatures_count} человек уже подписали</p>
                     <div className="ActionDivButtons">
                         <button onClick={handleSign} disabled={petition.is_signed === 1}

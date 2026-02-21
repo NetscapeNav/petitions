@@ -50,11 +50,19 @@ def get_db_connection():
     return connection
 
 @app.get('/api/petitions')
-def read_petitions(user_id: int):
+def read_petitions(user_id: int, auth_token: str = Cookie(default=None)):
     connection = get_db_connection()
     if connection is None:
         return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
+
+    actual_user_id = 0
+    
+    if user_id != 0 and auth_token:
+        cursor.execute("SELECT id FROM users WHERE id = %s AND token = %s", (user_id, auth_token))
+        if cursor.fetchone():
+            actual_user_id = user_id
+
     query = """
         SELECT 
             id, 
@@ -69,7 +77,7 @@ def read_petitions(user_id: int):
         FROM petitions 
         WHERE status ='ongoing' OR status ='ready_for_paper'
     """
-    cursor.execute(query, (user_id, ))
+    cursor.execute(query, (actual_user_id, ))
     data = cursor.fetchall()
     cursor.close()
     connection.close()
@@ -183,7 +191,7 @@ def handle_submit_petition(
         if len(safe_header) > 200 or len(safe_text) > 1000000:
             return {"status": "error", "message": "Превышено максимальное количество символов для заголовка или текста"}
 
-        VALID_LOCATIONS = ["NSU", "IRNITU", "SPB", "other"]
+        VALID_LOCATIONS = ["NSU", "IRK", "SPB", "other", "Any"]
         if location not in VALID_LOCATIONS:
             return {"status": "error", "message": "Некорректная локация."}
         safe_location = html.escape(location)
@@ -367,7 +375,7 @@ def request_verification(
         location: str = Form(...),
         auth_token: str = Cookie(default=None)
 ):
-    VALID_LOCATIONS = ["NSU", "IRNITU", "SPB", "other"]
+    VALID_LOCATIONS = ["NSU", "IRK", "SPB", "other"]
     if location not in VALID_LOCATIONS:
         return {"status": "error", "message": "Некорректная локация"}
     
@@ -401,7 +409,7 @@ def request_verification(
 
 @app.post('/api/verify/confirm')
 def confirm_verification(
-        responce: Response,
+        response: Response,
         user_id: int = Form(...),
         code: str = Form(...),
         auth_token: str = Cookie(default=None)
@@ -421,7 +429,7 @@ def confirm_verification(
             new_token = secrets.token_hex(16)
             cursor.execute("UPDATE users SET is_verified = 1, token = %s WHERE id = %s", (new_token, user_id))
             connection.commit()
-            responce.set_cookie(key="auth_token", value=new_token, httponly=True, secure=True, samesite='Lax', max_age=30*24*60*60)
+            response.set_cookie(key="auth_token", value=new_token, httponly=True, secure=True, samesite='Lax', max_age=30*24*60*60)
             return {"status": "success", "message": "Authorized"}
         else:
             return {"status": "error", "message": "Неверный код подтверждения"}
@@ -469,7 +477,8 @@ def login(data: dict, response: Response):
             return {
                 "status": "success",
                 "user_id": user['id'],
-                "is_verified": bool(user['is_verified'])
+                "is_verified": bool(user['is_verified']),
+                "region": user['region']
             }
 
         ins_query = """
@@ -495,7 +504,7 @@ def login(data: dict, response: Response):
 
         response.set_cookie(key="auth_token", value=new_token, httponly=True, secure=True, samesite='Lax', max_age=30*24*60*60)
 
-        return {"status": "success", "user_id": new_user_id, "is_verified": is_verified}
+        return {"status": "success", "user_id": new_user_id, "is_verified": is_verified, "region": whilelist[tg_id] if tg_id in whilelist else ""}
     except Error as e:
         print(f"SQL Error: {e}")
         return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
@@ -511,10 +520,10 @@ def send_telegram_message(tg_id:int, text: str):
         "parse_mode": "HTML"
     }
     try:
-        responce = requests.post(url, json=payload)
-        responce_data = responce.json()
-        if not responce_data.get("ok"):
-            print(f"Ошибка отправки сообщения пользователю {tg_id}: {responce_data.get('description')}")
+        response = requests.post(url, json=payload)
+        response_data = response.json()
+        if not response_data.get("ok"):
+            print(f"Ошибка отправки сообщения пользователю {tg_id}: {response_data.get('description')}")
     except Exception as e:
         print(f"Ошибка отправки пользователю {tg_id}: {e}")
 

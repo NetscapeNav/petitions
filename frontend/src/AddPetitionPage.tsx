@@ -8,6 +8,7 @@ function AddPetitionPage() {
     const navigate = useNavigate();
     const storedId = localStorage.getItem("user_id");
     const userId = storedId ? storedId : "0";
+    const userLocation = localStorage.getItem("user_region");
 
     useEffect(() => {
         if (userId === "0") {
@@ -80,19 +81,20 @@ function AddPetitionPage() {
             <h1 className="AddPetitionHeader">Подайте <i>свою</i> петицию</h1>
             <form className="AddPetitionForm" onSubmit={handleSubmit}>
                 <label htmlFor="location">Локация проведения</label>
-                <select name="location" required defaultValue="">
+                <select name="location" required defaultValue={userLocation || "Any"}>
                     <option value="" disabled>Выберите место проведения</option>
-                    <option value="NSU">НГУ</option>
-                    <option value="IRK">Иркутск</option>
-                    <option value="SPB">Санкт-Петербург</option>
+                    {userLocation === "NSU" && <option value="NSU">НГУ</option>}
+                    {userLocation === "IRK" && <option value="IRK">ИрНИТУ</option>}
+                    {userLocation === "SPB" && <option value="SPB">Санкт-Петербург</option>}
+                    {userLocation === "other" && <option value="other">Другое</option>}
                     <option value="Any">Любая</option>
                 </select>
                 <label htmlFor="header">Название петиции</label>
                 <input type="text" id="header" placeholder="Напишите сюда..." name="header" maxLength={200} required/>
                 <label htmlFor="text">Текст петиции</label>
                 <textarea id="text" placeholder="Напишите сюда..." name="text" maxLength={1000000} required></textarea>
-                <label htmlFor="file">Файл PDF</label>
-                <input type="file" id="file" name="files" multiple/>
+                <label htmlFor="file">Файлы к петиции</label>
+                <input className="FilesInput" type="file" id="file" name="files" multiple/>
                 <button className="PetitionSubmit" type="submit">Отправить</button>
             </form>
         </div>

@@ -30,6 +30,10 @@
     font-size: 0.8em;
 }
 
+.FilesInput {
+    border: none !important;
+}
+
 .PetitionSubmit {
     margin-top: 1em;
     font-size: 2em;
