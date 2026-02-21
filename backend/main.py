@@ -258,14 +258,17 @@ def get_petition_id(
         return {"status": "error", "message": "Ошибка подключения к базе данных"}
     cursor = connection.cursor(dictionary=True)
 
+    actual_user_id = 0
     is_admin = False
     if auth_token and user_id != 0:
         try:
             cursor.execute("SELECT tg_id FROM users WHERE id = %s AND token = %s", (user_id, auth_token))
             user = cursor.fetchone()
             
-            if user and str(user['tg_id']) == str(config.admin_id):
-                is_admin = True
+            if user:
+                actual_user_id = user_id
+                if str(user['tg_id']) == str(config.admin_id):
+                    is_admin = True
         except Error as e:
             print(f"Auth check error: {e}")
 
@@ -278,7 +281,7 @@ def get_petition_id(
     (SELECT COUNT(*) FROM signatures WHERE petitions.id = signatures.petition_id) as signatures_count
     FROM petitions
     WHERE petitions.id = %s"""
-    value = (user_id, petition_id, )
+    value = (actual_user_id, petition_id, )
     try:
         cursor.execute(query, value)
         data = cursor.fetchone()
@@ -517,8 +520,7 @@ def send_telegram_message(tg_id:int, text: str):
     url = f"https://api.telegram.org/bot{config.TOKEN}/sendMessage"
     payload = {
         "chat_id": tg_id,
-        "text": text,
-        "parse_mode": "HTML"
+        "text": text
     }
     try:
         response = requests.post(url, json=payload)
@@ -528,25 +530,13 @@ def send_telegram_message(tg_id:int, text: str):
     except Exception as e:
         print(f"Ошибка отправки пользователю {tg_id}: {e}")
 
-def telegram_author_call(petition_id: int, message: str):
-    connection = get_db_connection()
-    if connection is None:
-        return {"status": "error", "message": "Ошибка подключения к базе данных"}
-    cursor = connection.cursor(dictionary=True)
-
-    try:
-        cursor.execute("SELECT users.tg_id FROM signatures JOIN users ON signatures.user_id = users.id WHERE petition_id = %s", (petition_id, ))
-        tg_id_list = cursor.fetchall()
-
-        safe_message = html.escape(message)
-
-        count = 0
-        for row in tg_id_list:
-            tg_id = row['tg_id']
-            send_telegram_message(tg_id, "По одной из подписанных вами петиций есть уведомление!\n\n" +
-                                         "Сообщение от автора: " + safe_message + "\n\n" +
-                                         "Ссылка на петицию: https://petitions.sepcode.ru/petition/"+ str(petition_id))
-            count += 1
+def telegram_author_call(petition_id: int, message: str, tg_id_list: list):
+    count = 0
+    for tg_id in tg_id_list:
+        send_telegram_message(tg_id, "По одной из подписанных вами петиций есть уведомление!\n\n" +
+                                        "Сообщение от автора: " + message + "\n\n" +
+                                        "Ссылка на петицию: https://petitions.sepcode.ru/petition/"+ str(petition_id))
+        count += 1
 
     return {"status": "success", "message": f"Отправлено {count} уведомлений"}
 
@@ -581,6 +571,10 @@ def petition_notify(
 
         if len(message) > 3500:
             return {"status": "error", "message": "Сообщение слишком длинное"}
+        
+        cursor.execute("SELECT users.tg_id FROM signatures JOIN users ON signatures.user_id = users.id WHERE petition_id = %s", (petition_id, ))
+        tg_id_rows = cursor.fetchall()
+        tg_id_list = [row['tg_id'] for row in tg_id_rows]
 
     except Error as e:
         print(f"SQL Error: {e}")
@@ -589,7 +583,7 @@ def petition_notify(
         cursor.close()
         connection.close()
 
-    background_tasks.add_task(telegram_author_call, petition_id, message)
+    background_tasks.add_task(telegram_author_call, petition_id, message, tg_id_list)
     
     return {"status": "success", "message": "Рассылка запущена"}
 
