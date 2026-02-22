@@ -1,5 +1,5 @@
 import Swal from 'sweetalert2';
-import './custom-swal.css';
+import '../assets/custom-swal.css';
 
 export interface MyAlertInterface {
     success: (title: string, text?: string) => Promise<any>;

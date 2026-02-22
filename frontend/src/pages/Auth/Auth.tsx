@@ -1,8 +1,8 @@
 import {useState, useEffect} from "react";
 import './Auth.css'
 import {Link, useParams, useNavigate, Form} from "react-router-dom";
-import {API_URL} from "./config";
-import { myAlert } from './myAlert';
+import {API_URL} from "../../utils/config";
+import { myAlert } from '../../utils/myAlert';
 
 interface TelegramUser {
     id: number;

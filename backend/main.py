@@ -374,6 +374,7 @@ def send_email(to_email, code):
 
 @app.post('/api/verify/request')
 def request_verification(
+        background_tasks: BackgroundTasks,
         user_id: int = Form(...),
         email: str = Form(...),
         location: str = Form(...),
@@ -382,7 +383,10 @@ def request_verification(
     VALID_LOCATIONS = ["NSU", "IRK", "SPB", "other"]
     if location not in VALID_LOCATIONS:
         return {"status": "error", "message": "Некорректная локация"}
-    
+
+    if '@' not in email:
+        return {"status": "error", "message": "Некорректная почта"}
+
     domain = email.split('@')[-1].lower()
     if domain not in ["nsu.ru", "g.nsu.ru", "stud.nsu.ru"] and location == "NSU":
         return {"status": "error", "message": "Нужна почта @nsu.ru"}
@@ -400,15 +404,16 @@ def request_verification(
         cursor.execute("UPDATE users SET email = %s, verification_code = %s, region = %s WHERE id = %s", (email, new_code, location, user_id))
         connection.commit()
 
-        if send_email(email, new_code):
-            return {"status": "success", "message": "Код отправлен на почту"}
-        else:
-            return {"status": "error", "message": "Ошибка отправки кода. Проверьте почтовый адрес или попробуйте позже"}
     except Error as e:
         return {"status": "error", "message": "Неизвестная ошибка. Попробуйте позже"}
     finally:
         cursor.close()
         connection.close()
+
+    background_tasks.add_task(send_email, email, new_code)
+
+    return {"status": "success", "message": "Код отправлен на почту"}
+
 
 
 @app.post('/api/verify/confirm')
@@ -523,7 +528,7 @@ def send_telegram_message(tg_id:int, text: str):
         "text": text
     }
     try:
-        response = requests.post(url, json=payload)
+        response = requests.post(url, json=payload, timeout=5)
         response_data = response.json()
         if not response_data.get("ok"):
             print(f"Ошибка отправки сообщения пользователю {tg_id}: {response_data.get('description')}")

@@ -1,8 +1,8 @@
 import {useState, useEffect} from "react";
 import './PetitionPage.css'
 import {Link, useParams, useNavigate} from "react-router-dom";
-import {API_URL} from "./config";
-import { myAlert } from './myAlert';
+import {API_URL} from "../../utils/config";
+import { myAlert } from '../../utils/myAlert';
 
 interface Petition {
     id: number;

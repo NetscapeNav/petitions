@@ -1,12 +1,12 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import React from 'react';
-import './App.css';
-import Header from "./Header";
-import Footer from "./Footer";
-import Main from "./Main";
-import AddPetitionPage from "./AddPetitionPage";
-import PetitionPage from "./PetitionPage";
-import Auth from "./Auth";
+import './assets/App.css';
+import Header from "./components/Header/Header";
+import Footer from "./components/Footer/Footer";
+import Main from "./pages/Main/Main";
+import AddPetitionPage from "./pages/AddPetitionPage/AddPetitionPage";
+import PetitionPage from "./pages/PetitionPage/PetitionPage";
+import Auth from "./pages/Auth/Auth";
 
 function App() {
   return (

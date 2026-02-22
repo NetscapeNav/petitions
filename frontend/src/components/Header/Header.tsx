@@ -1,6 +1,6 @@
 import {useState, useEffect} from "react";
 import './Header.css';
-import {API_URL} from "./config";
+import {API_URL} from "../../utils/config";
 
 function Header() {
     const [count, setCount] = useState(0);

@@ -1,8 +1,8 @@
-import Petitions from "./Petitions";
+import Petitions from "../Petitions/Petitions";
 import {Link} from "react-router-dom";
 import React from "react";
 import './Main.css';
-import Header from "./Header";
+import Header from "../../components/Header/Header";
 
 function Main() {
     return (

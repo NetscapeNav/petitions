@@ -1,8 +1,8 @@
 import "./AddPetitionPage.css"
 import {useState, useEffect} from "react";
 import {Link, useNavigate} from "react-router-dom";
-import { API_URL } from "./config";
-import { myAlert } from './myAlert';
+import { API_URL } from "../../utils/config";
+import { myAlert } from '../../utils/myAlert';
 
 function AddPetitionPage() {
     const navigate = useNavigate();

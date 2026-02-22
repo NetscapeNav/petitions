@@ -1,7 +1,7 @@
 import React, {useState, useEffect} from "react";
 import './Petitions.css';
 import {Link, useNavigate} from "react-router-dom";
-import {API_URL} from "./config";
+import {API_URL} from "../../utils/config";
 
 interface Petition {
     id: number;
