@@ -27,7 +27,7 @@
 
 ### 1. Подготовка базы данных
 * Установите MySQL Server
-* Создайте базу данных (схемы таблиц `users`, `petitions`, `signatures` и `sessions`)
+* Создайте базу данных (схемы таблиц `users`, `petitions`, `signatures`)
 
 ### 2. Запуск FastAPI
 1. Перейдите в папку бэкенда
